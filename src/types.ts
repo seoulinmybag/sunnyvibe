@@ -21,6 +21,8 @@ export interface PlacedIcon {
   zIndex: number;
   /** Only meaningful for recolorable library icons (see isLibraryIcon). */
   color?: string;
+  /** Visible sub-rectangle of the source image, in the image's natural pixel space. Photos only. */
+  crop?: { x: number; y: number; width: number; height: number };
 }
 
 export interface TextField {

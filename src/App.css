@@ -369,6 +369,64 @@
   background: #c0392b;
 }
 
+.selection-crop-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: #2b2b2b;
+  color: #fff;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0;
+}
+
+.selection-crop-btn:hover {
+  background: var(--accent);
+}
+
+.crop-toolbar {
+  transform: translate(-50%, -140%);
+}
+
+.crop-done-btn {
+  width: 30px;
+  height: 30px;
+  background: var(--accent);
+  font-size: 16px;
+}
+
+.crop-done-btn:hover {
+  background: var(--accent);
+  opacity: 0.85;
+}
+
+.text-edit-overlay {
+  position: absolute;
+  z-index: 10;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  border: 1px dashed var(--accent);
+  background: rgba(255, 255, 255, 0.9);
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  line-height: 1.16;
+  white-space: pre-wrap;
+}
+
+@media (prefers-color-scheme: dark) {
+  .text-edit-overlay {
+    background: rgba(30, 30, 30, 0.9);
+  }
+}
+
 .orientation-row {
   display: flex;
   gap: 8px;
