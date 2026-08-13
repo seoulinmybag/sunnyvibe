@@ -239,6 +239,20 @@ export default function CanvasEditor({
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  // shrink the card to fit narrow (mobile) screens, keeping the canvas at full resolution
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0].contentRect.width;
+      if (w > 0) setScale(Math.min(1, w / width));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [width]);
 
   useEffect(() => {
     const tr = trRef.current;
@@ -310,7 +324,8 @@ export default function CanvasEditor({
   const editingField = editingTextId ? texts.find((t) => t.id === editingTextId) : undefined;
 
   return (
-    <div className="canvas-shell">
+    <div className="canvas-viewport" ref={viewportRef} style={{ maxWidth: width, height: height * scale }}>
+      <div className="canvas-shell" style={{ width, height, transform: `scale(${scale})` }}>
       <Stage
         ref={stageRef}
         width={width}
@@ -365,17 +380,18 @@ export default function CanvasEditor({
           {croppingIcon && <CropLayer icon={croppingIcon} onCommit={(attrs) => onIconChange(croppingIcon.uid, attrs)} />}
         </Layer>
       </Stage>
+      </div>
 
       {editingField && (
         <textarea
           ref={textareaRef}
           className="text-edit-overlay"
           style={{
-            left: editingField.x,
-            top: editingField.y,
-            width: editingField.width,
-            minHeight: selectionRect?.height ?? editingField.fontSize * 1.4,
-            fontSize: editingField.fontSize,
+            left: editingField.x * scale,
+            top: editingField.y * scale,
+            width: editingField.width * scale,
+            minHeight: (selectionRect?.height ?? editingField.fontSize * 1.4) * scale,
+            fontSize: editingField.fontSize * scale,
             fontFamily: editingField.fontFamily,
             color: editingField.fill,
             textAlign: editingField.align,
@@ -394,7 +410,7 @@ export default function CanvasEditor({
       {croppingIcon && (
         <div
           className="selection-toolbar crop-toolbar"
-          style={{ left: croppingIcon.x + croppingIcon.width, top: croppingIcon.y }}
+          style={{ left: (croppingIcon.x + croppingIcon.width) * scale, top: croppingIcon.y * scale }}
         >
           <button className="selection-delete-btn crop-done-btn" title="자르기 완료" onClick={() => setCroppingUid(null)}>
             ✓
@@ -406,8 +422,8 @@ export default function CanvasEditor({
         <div
           className="selection-toolbar"
           style={{
-            left: selectionRect.x + selectionRect.width,
-            top: selectionRect.y,
+            left: (selectionRect.x + selectionRect.width) * scale,
+            top: selectionRect.y * scale,
           }}
         >
           {showColorSwatch && selectedIcon && (

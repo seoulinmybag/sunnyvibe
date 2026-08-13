@@ -203,8 +203,14 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <h1>청첩장 꾸미기</h1>
-        <p>아이콘을 골라 나만의 청첩장을 완성하고, 이미지로 저장하거나 시안을 확정하세요.</p>
+        <div className="app-header-brand">
+          {/* TODO: swap for the real logo file once we have it — see src/assets/logo.png */}
+          <span className="app-logo-placeholder">sunny vibe</span>
+        </div>
+        <div>
+          <h1>청첩장 꾸미기</h1>
+          <p>아이콘을 골라 나만의 청첩장을 완성하고, 이미지로 저장하거나 시안을 확정하세요.</p>
+        </div>
       </header>
       <Toolbar
         selected={selected}
