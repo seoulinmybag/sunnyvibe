@@ -112,6 +112,29 @@
   }
 }
 
+.app-main-readonly {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+}
+
+.app-readonly-banner {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.save-status-badge {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  z-index: 20;
+  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--code-bg);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
 .side-col {
   display: flex;
   flex-direction: column;

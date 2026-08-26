@@ -17,17 +17,21 @@ interface Props {
   onTextChange: (id: string, attrs: Partial<TextField>) => void;
   onDelete: () => void;
   stageRef: React.RefObject<Konva.Stage | null>;
+  /** false = view-only (confirmed orders): no drag/select/edit affordances at all. */
+  interactive?: boolean;
 }
 
 function IconNode({
   icon,
   isSelected,
+  interactive,
   onSelect,
   onChange,
   onStartCrop,
 }: {
   icon: PlacedIcon;
   isSelected: boolean;
+  interactive: boolean;
   onSelect: () => void;
   onChange: (attrs: Partial<PlacedIcon>) => void;
   onStartCrop: () => void;
@@ -46,11 +50,11 @@ function IconNode({
       width={icon.width}
       height={icon.height}
       rotation={icon.rotation}
-      draggable
-      onClick={onSelect}
-      onTap={onSelect}
-      onDblClick={isPhoto ? onStartCrop : undefined}
-      onDblTap={isPhoto ? onStartCrop : undefined}
+      draggable={interactive}
+      onClick={interactive ? onSelect : undefined}
+      onTap={interactive ? onSelect : undefined}
+      onDblClick={interactive && isPhoto ? onStartCrop : undefined}
+      onDblTap={interactive && isPhoto ? onStartCrop : undefined}
       onDragEnd={(e) => onChange({ x: e.target.x(), y: e.target.y() })}
       onTransformEnd={(e) => {
         const node = e.target;
@@ -168,6 +172,7 @@ function TextNode({
   field,
   isSelected,
   isEditing,
+  interactive,
   onSelect,
   onChange,
   onStartEdit,
@@ -175,6 +180,7 @@ function TextNode({
   field: TextField;
   isSelected: boolean;
   isEditing: boolean;
+  interactive: boolean;
   onSelect: () => void;
   onChange: (attrs: Partial<TextField>) => void;
   onStartEdit: () => void;
@@ -190,12 +196,12 @@ function TextNode({
       fontFamily={field.fontFamily}
       fill={field.fill}
       align={field.align}
-      draggable
+      draggable={interactive}
       opacity={isEditing ? 0 : 1}
-      onClick={onSelect}
-      onTap={onSelect}
-      onDblClick={onStartEdit}
-      onDblTap={onStartEdit}
+      onClick={interactive ? onSelect : undefined}
+      onTap={interactive ? onSelect : undefined}
+      onDblClick={interactive ? onStartEdit : undefined}
+      onDblTap={interactive ? onStartEdit : undefined}
       onDragEnd={(e) => onChange({ x: e.target.x(), y: e.target.y() })}
       onTransformEnd={(e) => {
         const node = e.target;
@@ -232,6 +238,7 @@ export default function CanvasEditor({
   onTextChange,
   onDelete,
   stageRef,
+  interactive = true,
 }: Props) {
   const trRef = useRef<Konva.Transformer>(null);
   const [selectionRect, setSelectionRect] = useState<SelectionRect | null>(null);
@@ -258,7 +265,7 @@ export default function CanvasEditor({
     const tr = trRef.current;
     const stage = stageRef.current;
     if (!tr || !stage) return;
-    if (!selected || croppingUid || editingTextId) {
+    if (!interactive || !selected || croppingUid || editingTextId) {
       tr.nodes([]);
       tr.getLayer()?.batchDraw();
       if (!selected) setSelectionRect(null);
@@ -274,7 +281,7 @@ export default function CanvasEditor({
       setSelectionRect(null);
     }
     tr.getLayer()?.batchDraw();
-  }, [selected, icons, texts, stageRef, croppingUid, editingTextId]);
+  }, [selected, icons, texts, stageRef, croppingUid, editingTextId, interactive]);
 
   useEffect(() => {
     if (editingTextId && textareaRef.current) {
@@ -331,13 +338,13 @@ export default function CanvasEditor({
         width={width}
         height={height}
         onMouseDown={(e) => {
-          if (e.target === e.target.getStage()) {
+          if (interactive && e.target === e.target.getStage()) {
             onSelect(null);
             setCroppingUid(null);
           }
         }}
         onTouchStart={(e) => {
-          if (e.target === e.target.getStage()) {
+          if (interactive && e.target === e.target.getStage()) {
             onSelect(null);
             setCroppingUid(null);
           }
@@ -353,6 +360,7 @@ export default function CanvasEditor({
                   key={item.data.uid}
                   icon={item.data}
                   isSelected={selected?.type === 'icon' && selected.uid === item.data.uid}
+                  interactive={interactive}
                   onSelect={() => onSelect({ type: 'icon', uid: item.data.uid })}
                   onChange={(attrs) => onIconChange(item.data.uid, attrs)}
                   onStartCrop={() => startCropping(item.data)}
@@ -365,24 +373,27 @@ export default function CanvasEditor({
                 field={item.data}
                 isSelected={selected?.type === 'text' && selected.id === item.data.id}
                 isEditing={editingTextId === item.data.id}
+                interactive={interactive}
                 onSelect={() => onSelect({ type: 'text', id: item.data.id })}
                 onChange={(attrs) => onTextChange(item.data.id, attrs)}
                 onStartEdit={() => startEditingText(item.data)}
               />
             );
           })}
-          <Transformer
-            ref={trRef}
-            rotateEnabled
-            flipEnabled={false}
-            boundBoxFunc={(oldBox, newBox) => (newBox.width < 12 || newBox.height < 12 ? oldBox : newBox)}
-          />
-          {croppingIcon && <CropLayer icon={croppingIcon} onCommit={(attrs) => onIconChange(croppingIcon.uid, attrs)} />}
+          {interactive && (
+            <Transformer
+              ref={trRef}
+              rotateEnabled
+              flipEnabled={false}
+              boundBoxFunc={(oldBox, newBox) => (newBox.width < 12 || newBox.height < 12 ? oldBox : newBox)}
+            />
+          )}
+          {interactive && croppingIcon && <CropLayer icon={croppingIcon} onCommit={(attrs) => onIconChange(croppingIcon.uid, attrs)} />}
         </Layer>
       </Stage>
       </div>
 
-      {editingField && (
+      {interactive && editingField && (
         <textarea
           ref={textareaRef}
           className="text-edit-overlay"
@@ -407,7 +418,7 @@ export default function CanvasEditor({
         />
       )}
 
-      {croppingIcon && (
+      {interactive && croppingIcon && (
         <div
           className="selection-toolbar crop-toolbar"
           style={{ left: (croppingIcon.x + croppingIcon.width) * scale, top: croppingIcon.y * scale }}
@@ -418,7 +429,7 @@ export default function CanvasEditor({
         </div>
       )}
 
-      {!croppingIcon && !editingField && selectionRect && selected && (
+      {interactive && !croppingIcon && !editingField && selectionRect && selected && (
         <div
           className="selection-toolbar"
           style={{

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type Konva from 'konva';
 import CanvasEditor from './CanvasEditor';
 import IconLibrary from './IconLibrary';
@@ -21,17 +21,25 @@ interface EditorProps {
   initialPages: Record<Side, PageState>;
   /** Only the standalone `/` playground shows this today. */
   showCustomerLinkPanel?: boolean;
+  /** true once the order is confirmed — canvas becomes view-only and editing panels are hidden. */
+  readOnly?: boolean;
+  /** fired whenever `pages` changes, so a customer-order host can debounce-save it. */
+  onPagesChange?: (pages: Record<Side, PageState>) => void;
 }
 
 let uidCounter = 0;
 
-export default function Editor({ orientation: initialOrientation, initialPages }: EditorProps) {
+export default function Editor({ orientation: initialOrientation, initialPages, readOnly = false, onPagesChange }: EditorProps) {
   const [orientation, setOrientation] = useState<Orientation>(initialOrientation);
   const spec = ORIENTATIONS[orientation];
 
   const [pages, setPages] = useState<Record<Side, PageState>>(initialPages);
   const [activeSide, setActiveSide] = useState<Side>('front');
   const activePage = pages[activeSide];
+
+  useEffect(() => {
+    onPagesChange?.(pages);
+  }, [pages, onPagesChange]);
 
   const baseTemplate = TEMPLATES.find((t) => t.id === activePage.templateId) ?? INITIAL_TEMPLATE;
   const template = activePage.customColor
@@ -158,7 +166,11 @@ export default function Editor({ orientation: initialOrientation, initialPages }
         </div>
         <div>
           <h1>청첩장 꾸미기</h1>
-          <p>아이콘을 골라 나만의 청첩장을 완성하고, 이미지로 저장하거나 시안을 확정하세요.</p>
+          {readOnly ? (
+            <p className="app-readonly-banner">확정된 시안이에요 — 더 이상 수정할 수 없어요.</p>
+          ) : (
+            <p>아이콘을 골라 나만의 청첩장을 완성하고, 이미지로 저장하거나 시안을 확정하세요.</p>
+          )}
         </div>
       </header>
       <Toolbar
@@ -169,11 +181,14 @@ export default function Editor({ orientation: initialOrientation, initialPages }
         onDelete={handleDelete}
         onReorder={handleReorder}
         stageRef={stageRef}
+        readOnly={readOnly}
       />
-      <main className="app-main">
-        <aside className="side-col">
-          <IconLibrary onAddIcon={handleAddIcon} />
-        </aside>
+      <main className={readOnly ? 'app-main app-main-readonly' : 'app-main'}>
+        {!readOnly && (
+          <aside className="side-col">
+            <IconLibrary onAddIcon={handleAddIcon} />
+          </aside>
+        )}
         <section className="center-col">
           <CanvasEditor
             width={spec.displayWidth}
@@ -187,20 +202,23 @@ export default function Editor({ orientation: initialOrientation, initialPages }
             onTextChange={handleTextChange}
             onDelete={handleDelete}
             stageRef={stageRef}
+            interactive={!readOnly}
           />
           <PageSwitcher side={activeSide} onChange={handleSwitchSide} />
         </section>
-        <aside className="side-col">
-          <OrientationPicker orientation={orientation} onChange={handleOrientationChange} />
-          <ImageUpload onUpload={handleUploadPhoto} />
-          <TemplatePicker
-            templateId={activePage.templateId}
-            customColor={activePage.customColor}
-            onChange={handleTemplateChange}
-            onCustomColor={handleCustomColor}
-          />
-          <TextFieldsPanel texts={activePage.texts} selected={selected} onChange={handleTextChange} onSelect={setSelected} />
-        </aside>
+        {!readOnly && (
+          <aside className="side-col">
+            <OrientationPicker orientation={orientation} onChange={handleOrientationChange} />
+            <ImageUpload onUpload={handleUploadPhoto} />
+            <TemplatePicker
+              templateId={activePage.templateId}
+              customColor={activePage.customColor}
+              onChange={handleTemplateChange}
+              onCustomColor={handleCustomColor}
+            />
+            <TextFieldsPanel texts={activePage.texts} selected={selected} onChange={handleTextChange} onSelect={setSelected} />
+          </aside>
+        )}
       </main>
     </div>
   );

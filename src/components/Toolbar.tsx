@@ -11,6 +11,8 @@ interface Props {
   onDelete: () => void;
   onReorder: (dir: 'front' | 'back') => void;
   stageRef: React.RefObject<Konva.Stage | null>;
+  /** true once the order is confirmed — no more edits, only the casual PNG download stays available. */
+  readOnly?: boolean;
 }
 
 function downloadDataUri(uri: string, filename: string) {
@@ -24,7 +26,7 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export default function Toolbar({ selected, orientation, activeSide, onSwitchSide, onDelete, onReorder, stageRef }: Props) {
+export default function Toolbar({ selected, orientation, activeSide, onSwitchSide, onDelete, onReorder, stageRef, readOnly = false }: Props) {
   const spec = ORIENTATIONS[orientation];
 
   function handleDownload() {
@@ -73,21 +75,27 @@ export default function Toolbar({ selected, orientation, activeSide, onSwitchSid
   return (
     <div className="toolbar">
       <div className="toolbar-group">
-        <button disabled={!selected} onClick={() => onReorder('back')}>
-          ⬇ 뒤로
-        </button>
-        <button disabled={!selected} onClick={() => onReorder('front')}>
-          ⬆ 앞으로
-        </button>
-        <button disabled={!selected} className="danger" onClick={onDelete}>
-          삭제
-        </button>
+        {!readOnly && (
+          <>
+            <button disabled={!selected} onClick={() => onReorder('back')}>
+              ⬇ 뒤로
+            </button>
+            <button disabled={!selected} onClick={() => onReorder('front')}>
+              ⬆ 앞으로
+            </button>
+            <button disabled={!selected} className="danger" onClick={onDelete}>
+              삭제
+            </button>
+          </>
+        )}
       </div>
       <div className="toolbar-group">
         <button onClick={handleDownload}>이미지 다운로드</button>
-        <button className="primary" onClick={handleConfirmDesign}>
-          시안 확정하기
-        </button>
+        {!readOnly && (
+          <button className="primary" onClick={handleConfirmDesign}>
+            시안 확정하기
+          </button>
+        )}
       </div>
     </div>
   );
