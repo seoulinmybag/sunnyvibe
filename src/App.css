@@ -17,15 +17,10 @@
   flex-shrink: 0;
 }
 
-.app-logo-placeholder {
-  display: inline-block;
-  font-weight: 800;
-  font-size: 20px;
-  letter-spacing: -0.5px;
-  color: #3355ff;
-  padding: 6px 12px;
-  border: 1.5px solid #3355ff;
-  border-radius: 10px;
+.app-logo {
+  display: block;
+  height: 44px;
+  width: auto;
 }
 
 .app-header h1 {
@@ -39,9 +34,8 @@
 }
 
 @media (max-width: 640px) {
-  .app-logo-placeholder {
-    font-size: 15px;
-    padding: 4px 8px;
+  .app-logo {
+    height: 32px;
   }
 }
 

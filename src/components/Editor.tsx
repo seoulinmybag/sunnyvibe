@@ -8,6 +8,7 @@ import TemplatePicker from './TemplatePicker';
 import TextFieldsPanel from './TextFieldsPanel';
 import PageSwitcher from './PageSwitcher';
 import Toolbar from './Toolbar';
+import logoUrl from '../assets/logo.png';
 import { ICONS } from '../data/icons';
 import { TEMPLATES } from '../data/templates';
 import { ORIENTATIONS } from '../data/orientation';
@@ -166,8 +167,7 @@ export default function Editor({ orientation: initialOrientation, initialPages, 
     <div className="app-shell">
       <header className="app-header">
         <div className="app-header-brand">
-          {/* TODO: swap for the real logo file once we have it — see src/assets/logo.png */}
-          <span className="app-logo-placeholder">sunny vibe</span>
+          <img src={logoUrl} alt="sunny vibe" className="app-logo" />
         </div>
         <div>
           <h1>청첩장 꾸미기</h1>
