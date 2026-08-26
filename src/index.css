@@ -171,3 +171,173 @@ code {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.admin-hint {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.admin-shell {
+  display: flex;
+  justify-content: center;
+  min-height: 100svh;
+  padding: 32px 16px;
+  box-sizing: border-box;
+}
+
+.admin-card {
+  width: 100%;
+  max-width: 560px;
+  height: fit-content;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg);
+  text-align: left;
+}
+
+.admin-card h1 {
+  font-size: 22px;
+  margin: 0 0 14px;
+  letter-spacing: normal;
+}
+
+.admin-dashboard-card {
+  max-width: 760px;
+}
+
+.admin-dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-dashboard-header h1 {
+  margin: 0;
+}
+
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.admin-field input[type='text'],
+.admin-field textarea {
+  font: inherit;
+  font-size: 14px;
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  resize: vertical;
+}
+
+.admin-field input[type='file'] {
+  font-size: 13px;
+}
+
+.admin-radio-row,
+.admin-checkbox-row {
+  display: flex;
+  gap: 16px;
+  font-size: 14px;
+  color: var(--text-h);
+}
+
+.admin-radio-row label,
+.admin-checkbox-row label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.admin-actions button,
+.admin-link-btn {
+  font: inherit;
+  font-size: 14px;
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.admin-actions button.primary,
+.admin-link-btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.admin-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-table th {
+  color: var(--text);
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.admin-table button {
+  font: inherit;
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.admin-status {
+  display: inline-block;
+  font-size: 12px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--code-bg);
+  color: var(--text-h);
+}
+
+.admin-status-confirmed {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
