@@ -1,6 +1,6 @@
-import { ORIENTATIONS } from '../data/orientation';
-import { TEMPLATES } from '../data/templates';
-import type { Orientation, OrientationSpec, PageState, PlacedIcon, TextField } from '../types';
+import { ORIENTATIONS } from '../data/orientation.js';
+import { TEMPLATES } from '../data/templates.js';
+import type { Orientation, OrientationSpec, PageState, PlacedIcon, TextField } from '../types.js';
 
 const INITIAL_TEMPLATE = TEMPLATES[0]; // 화이트
 

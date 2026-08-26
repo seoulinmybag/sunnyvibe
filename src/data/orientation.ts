@@ -1,4 +1,4 @@
-import type { Orientation, OrientationSpec } from '../types';
+import type { Orientation, OrientationSpec } from '../types.js';
 
 /**
  * Print target: 16cm x 11cm physical card.
