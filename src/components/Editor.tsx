@@ -11,10 +11,16 @@ import Toolbar from './Toolbar';
 import { ICONS } from '../data/icons';
 import { TEMPLATES } from '../data/templates';
 import { ORIENTATIONS } from '../data/orientation';
-import type { Orientation, PageState, PlacedIcon, SelectedElement, Side, TextField } from '../types';
+import type { ConfirmPayload } from './Toolbar';
+import type { Orientation, PageState, PlacedIcon, SelectedElement, Side, TextField, Template } from '../types';
 import '../App.css';
 
 const INITIAL_TEMPLATE = TEMPLATES[0]; // 화이트
+
+function resolveTemplate(page: PageState): Template {
+  const base = TEMPLATES.find((t) => t.id === page.templateId) ?? INITIAL_TEMPLATE;
+  return page.customColor ? { id: 'custom', label: '커스텀', background: page.customColor, textColorDefault: base.textColorDefault } : base;
+}
 
 interface EditorProps {
   orientation: Orientation;
@@ -25,11 +31,13 @@ interface EditorProps {
   readOnly?: boolean;
   /** fired whenever `pages` changes, so a customer-order host can debounce-save it. */
   onPagesChange?: (pages: Record<Side, PageState>) => void;
+  /** when provided, "시안 확정하기" hands the generated files here instead of just saving a local PDF. */
+  onConfirm?: (payload: ConfirmPayload) => Promise<void>;
 }
 
 let uidCounter = 0;
 
-export default function Editor({ orientation: initialOrientation, initialPages, readOnly = false, onPagesChange }: EditorProps) {
+export default function Editor({ orientation: initialOrientation, initialPages, readOnly = false, onPagesChange, onConfirm }: EditorProps) {
   const [orientation, setOrientation] = useState<Orientation>(initialOrientation);
   const spec = ORIENTATIONS[orientation];
 
@@ -41,10 +49,7 @@ export default function Editor({ orientation: initialOrientation, initialPages, 
     onPagesChange?.(pages);
   }, [pages, onPagesChange]);
 
-  const baseTemplate = TEMPLATES.find((t) => t.id === activePage.templateId) ?? INITIAL_TEMPLATE;
-  const template = activePage.customColor
-    ? { id: 'custom', label: '커스텀', background: activePage.customColor, textColorDefault: baseTemplate.textColorDefault }
-    : baseTemplate;
+  const template = resolveTemplate(activePage);
 
   const [selected, setSelected] = useState<SelectedElement>(null);
   const zCounter = useRef(10);
@@ -182,6 +187,9 @@ export default function Editor({ orientation: initialOrientation, initialPages, 
         onReorder={handleReorder}
         stageRef={stageRef}
         readOnly={readOnly}
+        pages={pages}
+        resolveTemplate={resolveTemplate}
+        onConfirm={onConfirm}
       />
       <main className={readOnly ? 'app-main app-main-readonly' : 'app-main'}>
         {!readOnly && (

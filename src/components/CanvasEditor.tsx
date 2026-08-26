@@ -3,6 +3,7 @@ import { Stage, Layer, Rect, Text as KonvaText, Image as KonvaImage, Transformer
 import type Konva from 'konva';
 import useImage from 'use-image';
 import { getIconDefaultColor, getIconSrc, isLibraryIcon } from '../data/icons';
+import { sortByZIndex } from '../lib/layering';
 import type { PlacedIcon, TextField, Template, SelectedElement } from '../types';
 
 interface Props {
@@ -318,11 +319,7 @@ export default function CanvasEditor({
       }
     : { fill: template.background };
 
-  // icons and texts share one z-order so "앞으로/뒤로" and photo-behind-text placement work correctly
-  const layered: Array<{ zIndex: number } & ({ kind: 'icon'; data: PlacedIcon } | { kind: 'text'; data: TextField })> = [
-    ...icons.map((data) => ({ kind: 'icon' as const, data, zIndex: data.zIndex })),
-    ...texts.map((data) => ({ kind: 'text' as const, data, zIndex: data.zIndex })),
-  ].sort((a, b) => a.zIndex - b.zIndex);
+  const layered = sortByZIndex(icons, texts);
 
   const selectedIcon = selected?.type === 'icon' ? icons.find((i) => i.uid === selected.uid) : undefined;
   const showColorSwatch = !!selectedIcon && isLibraryIcon(selectedIcon.iconId);

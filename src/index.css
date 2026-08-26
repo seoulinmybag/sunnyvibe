@@ -341,3 +341,29 @@ code {
   background: var(--accent-bg);
   color: var(--accent);
 }
+
+.admin-table-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.admin-detail-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.admin-detail-thumbs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-detail-thumbs img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}

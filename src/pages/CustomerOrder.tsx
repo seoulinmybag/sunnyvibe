@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Editor from '../components/Editor';
+import type { ConfirmPayload } from '../components/Toolbar';
 import type { Orientation, PageState, Side } from '../types';
 
 interface OrderData {
@@ -71,6 +72,26 @@ export default function CustomerOrder() {
     }, 1200);
   }, []);
 
+  const handleConfirm = useCallback(async (payload: ConfirmPayload) => {
+    const current = orderRef.current;
+    if (!current) return;
+    if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current);
+    const res = await fetch(`/api/orders/confirm?id=${encodeURIComponent(current.id)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      alert('시안 확정에 실패했어요. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+    orderRef.current = { ...current, status: 'confirmed' };
+    setOrder((prev) => (prev ? { ...prev, status: 'confirmed' } : prev));
+    alert('시안이 확정되었어요! 저희가 확인 후 진행할게요.');
+  }, []);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!id) return;
@@ -132,6 +153,7 @@ export default function CustomerOrder() {
         showCustomerLinkPanel={false}
         readOnly={readOnly}
         onPagesChange={handlePagesChange}
+        onConfirm={handleConfirm}
       />
     </div>
   );
