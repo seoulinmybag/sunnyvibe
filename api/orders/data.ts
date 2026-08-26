@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireOrderAccess } from '../../_auth.js';
-import { getSupabaseAdmin } from '../../_supabaseAdmin.js';
+import { requireOrderAccess } from '../_auth.js';
+import { getSupabaseAdmin } from '../_supabaseAdmin.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const orderId = typeof req.query.id === 'string' ? req.query.id : '';

@@ -34,7 +34,7 @@ export default function CustomerOrder() {
 
   useEffect(() => {
     if (!id) return;
-    fetch(`/api/orders/${id}/data`, { credentials: 'include' })
+    fetch(`/api/orders/data?id=${encodeURIComponent(id)}`, { credentials: 'include' })
       .then((r) => r.json())
       .then((data) => {
         if (data.ok) {
@@ -52,7 +52,7 @@ export default function CustomerOrder() {
     if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = window.setTimeout(() => {
       setSaveState('saving');
-      fetch(`/api/orders/${current.id}/autosave`, {
+      fetch(`/api/orders/autosave?id=${encodeURIComponent(current.id)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
