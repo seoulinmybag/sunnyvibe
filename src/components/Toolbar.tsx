@@ -79,25 +79,38 @@ export default function Toolbar({
       const pageOrientation = orientation === 'landscape' ? 'landscape' : 'portrait';
 
       // only the currently-mounted side's Konva nodes are queryable, so this must be
-      // rebuilt fresh right after each onSwitchSide+wait below
-      function getNaturalSize(icon: PlacedIcon) {
+      // rebuilt fresh right after each onSwitchSide+wait below. Inlines every image as base64
+      // so the exported SVG stays valid forever instead of pointing at a short-lived signed URL.
+      function resolveImage(icon: PlacedIcon) {
         const node = stage!.findOne('#' + icon.uid) as Konva.Image | undefined;
         const img = node?.image() as HTMLImageElement | undefined;
-        if (img && img.naturalWidth > 0 && img.naturalHeight > 0) {
-          return { width: img.naturalWidth, height: img.naturalHeight };
+        if (!img || img.naturalWidth <= 0 || img.naturalHeight <= 0) return null;
+        if (icon.src.startsWith('data:')) {
+          return { width: img.naturalWidth, height: img.naturalHeight, dataUri: icon.src };
         }
-        return null;
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return null;
+          ctx.drawImage(img, 0, 0);
+          return { width: img.naturalWidth, height: img.naturalHeight, dataUri: canvas.toDataURL('image/png') };
+        } catch {
+          // CORS-tainted canvas — fall back to the original (possibly external) src reference
+          return null;
+        }
       }
 
       onSwitchSide('front');
       await wait(80);
       const frontPrintPng = stage.toDataURL({ pixelRatio, mimeType: 'image/png' });
-      const frontSvg = pageToSvgString(pages.front, resolveTemplate(pages.front), spec, getNaturalSize);
+      const frontSvg = pageToSvgString(pages.front, resolveTemplate(pages.front), spec, resolveImage);
 
       onSwitchSide('back');
       await wait(80);
       const backPrintPng = stage.toDataURL({ pixelRatio, mimeType: 'image/png' });
-      const backSvg = pageToSvgString(pages.back, resolveTemplate(pages.back), spec, getNaturalSize);
+      const backSvg = pageToSvgString(pages.back, resolveTemplate(pages.back), spec, resolveImage);
 
       onSwitchSide(originalSide);
 
