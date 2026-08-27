@@ -37,6 +37,10 @@ export interface TextField {
   align: 'left' | 'center' | 'right';
   width: number;
   zIndex: number;
+  /** Caption bar behind the text (the reference's black 자막 look). Undefined = no bar. */
+  background?: string;
+  /** Breathing room between the text and the caption bar's edge. Defaults to ~0.55em. */
+  backgroundPadding?: number;
 }
 
 export interface Template {

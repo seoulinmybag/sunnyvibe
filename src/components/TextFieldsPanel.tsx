@@ -7,6 +7,16 @@ interface Props {
   onSelect: (sel: SelectedElement) => void;
 }
 
+const CAPTION_BG_DEFAULT = '#141414';
+
+/** Rough perceived brightness of a #rrggbb color, 0(검정)~1(흰색). */
+function luminance(hex: string): number {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return 0.5;
+  const n = parseInt(m[1], 16);
+  return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+}
+
 const FONT_OPTIONS = [
   { value: "'Noto Serif KR', serif", label: '명조 (세리프)' },
   { value: "'Pretendard', system-ui, sans-serif", label: '고딕 (산세리프)' },
@@ -26,7 +36,7 @@ export default function TextFieldsPanel({ texts, selected, onChange, onSelect }:
             <span className="text-field-label">{f.label}</span>
             <textarea
               value={f.text}
-              rows={f.id === 'message' ? 3 : 1}
+              rows={f.id === 'message' ? 4 : f.id === 'account' ? 3 : 1}
               onFocus={() => onSelect({ type: 'text', id: f.id })}
               onChange={(e) => onChange(f.id, { text: e.target.value })}
             />
@@ -72,6 +82,35 @@ export default function TextFieldsPanel({ texts, selected, onChange, onSelect }:
                 ))}
               </select>
             </label>
+          </div>
+          <div className="style-row">
+            <label>
+              <input
+                type="checkbox"
+                checked={!!selectedField.background}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    // 어두운 자막 바 위에 어두운 글자가 깔려 안 보이는 일이 없도록 같이 뒤집어준다
+                    const flip = luminance(selectedField.fill) < 0.6 ? { fill: '#ffffff' } : {};
+                    onChange(selectedField.id, { background: CAPTION_BG_DEFAULT, ...flip });
+                  } else {
+                    const flip = luminance(selectedField.fill) > 0.8 ? { fill: '#333333' } : {};
+                    onChange(selectedField.id, { background: undefined, ...flip });
+                  }
+                }}
+              />
+              자막 배경
+            </label>
+            {selectedField.background && (
+              <label>
+                배경색
+                <input
+                  type="color"
+                  value={selectedField.background}
+                  onChange={(e) => onChange(selectedField.id, { background: e.target.value })}
+                />
+              </label>
+            )}
           </div>
           <div className="style-row align-row">
             {(['left', 'center', 'right'] as const).map((a) => (

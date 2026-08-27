@@ -38,6 +38,16 @@ interface EditorProps {
 
 let uidCounter = 0;
 
+/** New elements have to land above everything the auto-layout already placed (e.g. the 자막 caption at z 20). */
+function maxZIndex(pages: Record<Side, PageState>): number {
+  let max = 10;
+  for (const page of Object.values(pages)) {
+    for (const icon of page.icons) max = Math.max(max, icon.zIndex);
+    for (const text of page.texts) max = Math.max(max, text.zIndex);
+  }
+  return max;
+}
+
 export default function Editor({ orientation: initialOrientation, initialPages, readOnly = false, onPagesChange, onConfirm }: EditorProps) {
   const [orientation, setOrientation] = useState<Orientation>(initialOrientation);
   const spec = ORIENTATIONS[orientation];
@@ -53,7 +63,8 @@ export default function Editor({ orientation: initialOrientation, initialPages, 
   const template = resolveTemplate(activePage);
 
   const [selected, setSelected] = useState<SelectedElement>(null);
-  const zCounter = useRef(10);
+  const [initialZ] = useState(() => maxZIndex(initialPages));
+  const zCounter = useRef(initialZ);
   const stageRef = useRef<Konva.Stage | null>(null);
 
   function updateActivePage(updater: (p: PageState) => PageState) {

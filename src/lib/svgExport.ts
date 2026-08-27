@@ -57,6 +57,40 @@ function anchorX(field: TextField): number {
   return field.x;
 }
 
+/** CJK glyphs are ~1em wide, Latin/digits roughly half that — enough to size a caption bar without a text engine. */
+const WIDE_CHAR = /[\u1100-\u11FF\u3000-\u303F\u3130-\u318F\u4E00-\u9FFF\uAC00-\uD7AF\uFF00-\uFFEF]/;
+
+function estimateLineWidth(line: string, fontSize: number): number {
+  let units = 0;
+  for (const ch of line) units += WIDE_CHAR.test(ch) ? 1 : 0.52;
+  return units * fontSize;
+}
+
+/**
+ * The caption bar behind a 자막-style text field. Its width is estimated rather than measured —
+ * the browser canvas does the real measuring, so a print shop may need to nudge this rect by a
+ * hair. Same class of limitation as the soft-wrap note below.
+ */
+function renderTextBackground(field: TextField, lines: string[]): string {
+  const padding = field.backgroundPadding ?? field.fontSize * 0.55;
+  const lineHeight = field.fontSize * 1.3;
+  const textWidth = Math.min(
+    Math.max(...lines.map((line) => estimateLineWidth(line, field.fontSize))),
+    field.width,
+  );
+  const textHeight = field.fontSize + (lines.length - 1) * lineHeight;
+  const left =
+    field.align === 'center'
+      ? field.x + (field.width - textWidth) / 2
+      : field.align === 'right'
+        ? field.x + field.width - textWidth
+        : field.x;
+  return (
+    `<rect x="${left - padding}" y="${field.y - padding * 0.5}" ` +
+    `width="${textWidth + padding * 2}" height="${textHeight + padding}" rx="2" fill="${esc(field.background!)}"/>`
+  );
+}
+
 function renderText(field: TextField): string {
   // only hard line breaks (\n) become separate lines — Konva's soft-wrap within `width` isn't
   // reproduced here, a documented v1 limitation (see plan notes on SVG export scope)
@@ -68,7 +102,8 @@ function renderText(field: TextField): string {
   const tspans = lines
     .map((line, i) => `<tspan x="${x}" y="${firstBaselineY + i * lineHeight}">${esc(line)}</tspan>`)
     .join('');
-  return `<text font-family="${esc(field.fontFamily)}" font-size="${field.fontSize}" fill="${esc(field.fill)}" text-anchor="${anchor}">${tspans}</text>`;
+  const background = field.background && field.text.trim() !== '' ? renderTextBackground(field, lines) : '';
+  return `${background}<text font-family="${esc(field.fontFamily)}" font-size="${field.fontSize}" fill="${esc(field.fill)}" text-anchor="${anchor}">${tspans}</text>`;
 }
 
 /**

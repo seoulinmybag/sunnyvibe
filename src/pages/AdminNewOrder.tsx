@@ -13,9 +13,11 @@ export default function AdminNewOrder() {
 
   const [customerName, setCustomerName] = useState('');
   const [names, setNames] = useState('');
+  const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
   const [venue, setVenue] = useState('');
   const [greeting, setGreeting] = useState('');
+  const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape');
   const [panelType, setPanelType] = useState<'single' | 'fold'>('single');
   const [hasAccount, setHasAccount] = useState(false);
   const [hasMap, setHasMap] = useState(false);
@@ -56,6 +58,7 @@ export default function AdminNewOrder() {
     const form = new FormData();
     form.set('customer_name', customerName);
     form.set('names', names);
+    form.set('title', title);
     form.set('date', date);
     form.set('venue', venue);
     form.set('greeting', greeting);
@@ -65,7 +68,7 @@ export default function AdminNewOrder() {
     form.set('has_qr', String(hasQr));
     if (hasAccount) form.set('account_text', accountText);
     if (customerPassword.trim()) form.set('customer_password', customerPassword.trim());
-    form.set('orientation', 'landscape');
+    form.set('orientation', orientation);
     form.set('photo', photo);
     if (mapChecked && map) form.set('map', map);
     if (hasQr && qr) form.set('qr', qr);
@@ -136,6 +139,11 @@ export default function AdminNewOrder() {
         </label>
 
         <label className="admin-field">
+          <span>제목 (앞면 하단 자막)</span>
+          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="민호와 혜진이는 평생 사랑할 것을 맹세합니다" />
+        </label>
+
+        <label className="admin-field">
           <span>날짜/시간</span>
           <input type="text" value={date} onChange={(e) => setDate(e.target.value)} placeholder="2026년 10월 10일 토요일 오후 1시" />
         </label>
@@ -146,14 +154,26 @@ export default function AdminNewOrder() {
         </label>
 
         <label className="admin-field">
-          <span>인사말</span>
-          <textarea rows={3} value={greeting} onChange={(e) => setGreeting(e.target.value)} placeholder="비워두면 기본 문구가 들어가요" />
+          <span>인사말 (뒷면 · 2단은 내지 우측)</span>
+          <textarea rows={4} value={greeting} onChange={(e) => setGreeting(e.target.value)} placeholder="비워두면 기본 문구가 들어가요" />
         </label>
 
         <label className="admin-field">
           <span>신랑신부 사진 (보정 완료본)</span>
           <input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} />
         </label>
+
+        <div className="admin-field">
+          <span>카드 방향</span>
+          <div className="admin-radio-row">
+            <label>
+              <input type="radio" checked={orientation === 'landscape'} onChange={() => setOrientation('landscape')} /> 가로 (16:11)
+            </label>
+            <label>
+              <input type="radio" checked={orientation === 'portrait'} onChange={() => setOrientation('portrait')} /> 세로 (11:16)
+            </label>
+          </div>
+        </div>
 
         <div className="admin-field">
           <span>레이아웃 타입</span>

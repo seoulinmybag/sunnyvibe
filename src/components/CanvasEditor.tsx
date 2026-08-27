@@ -186,8 +186,55 @@ function TextNode({
   onChange: (attrs: Partial<TextField>) => void;
   onStartEdit: () => void;
 }) {
+  const textRef = useRef<Konva.Text>(null);
+  const [textBox, setTextBox] = useState<{ width: number; height: number } | null>(null);
+  // an empty caption would render as a stray black sliver, so the bar only appears with real text
+  const hasBackground = !!field.background && field.text.trim() !== '';
+
+  // the caption bar hugs the rendered glyphs, so it can only be sized after Konva has laid the text out
+  useEffect(() => {
+    if (!hasBackground) {
+      setTextBox(null);
+      return;
+    }
+    const measure = () => {
+      const node = textRef.current;
+      if (!node) return;
+      const width = Math.min(node.getTextWidth(), field.width);
+      const height = node.height();
+      setTextBox((prev) =>
+        prev && Math.abs(prev.width - width) < 0.5 && Math.abs(prev.height - height) < 0.5 ? prev : { width, height },
+      );
+    };
+    measure();
+    // web fonts land after the first paint and change the metrics — re-measure once they're ready
+    document.fonts?.ready.then(measure).catch(() => {});
+  }, [hasBackground, field.text, field.fontSize, field.fontFamily, field.width, field.align]);
+
+  const padding = field.backgroundPadding ?? Math.round(field.fontSize * 0.55);
+  const barLeft =
+    field.align === 'center'
+      ? field.x + (field.width - (textBox?.width ?? 0)) / 2
+      : field.align === 'right'
+        ? field.x + field.width - (textBox?.width ?? 0)
+        : field.x;
+
   return (
+    <>
+    {hasBackground && textBox && (
+      <Rect
+        x={barLeft - padding}
+        y={field.y - padding * 0.5}
+        width={textBox.width + padding * 2}
+        height={textBox.height + padding}
+        fill={field.background}
+        cornerRadius={2}
+        opacity={isEditing ? 0 : 1}
+        listening={false}
+      />
+    )}
     <KonvaText
+      ref={textRef}
       id={field.id}
       text={field.text}
       x={field.x}
@@ -217,6 +264,7 @@ function TextNode({
       }}
       shadowColor={isSelected ? '#00000022' : undefined}
     />
+    </>
   );
 }
 

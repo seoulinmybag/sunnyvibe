@@ -91,7 +91,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const photoPath = `${id}/photo.${ext(files.photo)}`;
-    await uploadOne(BUCKETS.photo, photoPath, files.photo);
+    // the front layout anchors the photo to the bottom edge at its own aspect ratio, so its
+    // natural size has to be known here — otherwise it would be stretched to a guessed ratio
+    const { buffer: photoBuffer } = await uploadOne(BUCKETS.photo, photoPath, files.photo);
+    const photoSize = probeSize(photoBuffer);
 
     let mapPath: string | null = null;
     let mapSize: ImageSize | null = null;
@@ -122,12 +125,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       hasQr,
       orientation,
       photoUrl: photoSigned?.signedUrl ?? null,
+      photoSize,
       mapUrl: mapSigned?.signedUrl ?? null,
       mapSize,
       qrUrl: qrSigned?.signedUrl ?? null,
       qrSize,
       accountText: hasAccount ? (fields.account_text ?? '') : null,
       names: fields.names || '신랑 · 신부',
+      title: fields.title || '',
       date: fields.date || '',
       venue: fields.venue || '',
       greeting: fields.greeting || '',

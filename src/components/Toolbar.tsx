@@ -55,6 +55,9 @@ export default function Toolbar({
 }: Props) {
   const spec = ORIENTATIONS[orientation];
   const [confirming, setConfirming] = useState(false);
+  const [askingConfirm, setAskingConfirm] = useState(false);
+  const [preview, setPreview] = useState<{ front: string; back: string } | null>(null);
+  const [previewing, setPreviewing] = useState(false);
 
   function handleDownload() {
     const stage = stageRef.current;
@@ -69,7 +72,34 @@ export default function Toolbar({
     }
   }
 
+  /** Snapshot both faces so the customer can eyeball the whole card before committing to it. */
+  async function handlePreview() {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const originalSide = activeSide;
+    setPreviewing(true);
+    try {
+      // screen-sized snapshots, not print resolution — this is a look-over, not an export
+      const pixelRatio = 1.5;
+      onSwitchSide('front');
+      await wait(80);
+      const front = stage.toDataURL({ pixelRatio, mimeType: 'image/png' });
+      onSwitchSide('back');
+      await wait(80);
+      const back = stage.toDataURL({ pixelRatio, mimeType: 'image/png' });
+      onSwitchSide(originalSide);
+      setPreview({ front, back });
+    } catch (err) {
+      console.error(err);
+      onSwitchSide(originalSide);
+      alert('미리보기를 만드는 데 실패했어요. 외부 사진 URL이 CORS를 허용하지 않으면 이 문제가 생길 수 있어요.');
+    } finally {
+      setPreviewing(false);
+    }
+  }
+
   async function handleConfirmDesign() {
+    setAskingConfirm(false);
     const stage = stageRef.current;
     if (!stage || !pages || !resolveTemplate) return;
     const originalSide = activeSide;
@@ -152,13 +182,54 @@ export default function Toolbar({
         )}
       </div>
       <div className="toolbar-group">
+        <button disabled={previewing} onClick={handlePreview}>
+          {previewing ? '만드는 중...' : '시안 미리보기'}
+        </button>
         <button onClick={handleDownload}>이미지 다운로드</button>
         {!readOnly && (
-          <button className="primary" disabled={confirming} onClick={handleConfirmDesign}>
+          <button className="primary" disabled={confirming} onClick={() => setAskingConfirm(true)}>
             {confirming ? '확정하는 중...' : '시안 확정하기'}
           </button>
         )}
       </div>
+
+      {preview && (
+        <div className="modal-backdrop" onClick={() => setPreview(null)}>
+          <div className="modal-card modal-preview" onClick={(e) => e.stopPropagation()}>
+            <h2>시안 미리보기</h2>
+            <div className="preview-grid">
+              <figure>
+                <img src={preview.front} alt="앞면 시안" />
+                <figcaption>앞면</figcaption>
+              </figure>
+              <figure>
+                <img src={preview.back} alt="뒷면 시안" />
+                <figcaption>뒷면</figcaption>
+              </figure>
+            </div>
+            <div className="modal-actions">
+              <button onClick={() => setPreview(null)}>닫기</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {askingConfirm && (
+        <div className="modal-backdrop" onClick={() => setAskingConfirm(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h2>시안 확정 전 오타 및 수정 요청사항 확인 부탁드립니다 😊</h2>
+            <p className="modal-note">
+              * 제작에 착수하게 되면 수정이 어려움으로 꼼꼼히 확인 부탁드립니다! ( Ex. 날짜, 내용, 이름, 계좌 번호 등)
+            </p>
+            <div className="modal-actions">
+              <button onClick={() => setAskingConfirm(false)}>취소</button>
+              <button className="primary" disabled={confirming} onClick={handleConfirmDesign}>
+                {confirming ? '확정하는 중...' : '시안 확정하기'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
