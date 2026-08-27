@@ -7,6 +7,70 @@ interface CreateResult {
   customerPassword: string;
 }
 
+interface FamilySide {
+  name: string;
+  father: string;
+  fatherDeceased: boolean;
+  mother: string;
+  motherDeceased: boolean;
+}
+
+const emptyFamily: FamilySide = { name: '', father: '', fatherDeceased: false, mother: '', motherDeceased: false };
+
+/** 신랑측/신부측 입력 묶음. 부모님 이름은 두 칸 모두 선택 입력이고, 각각 고인 표시를 켤 수 있다. */
+function FamilyFields({
+  legend,
+  nameLabel,
+  value,
+  onChange,
+}: {
+  legend: string;
+  nameLabel: string;
+  value: FamilySide;
+  onChange: (next: FamilySide) => void;
+}) {
+  return (
+    <fieldset className="admin-fieldset">
+      <legend>{legend}</legend>
+
+      <label className="admin-field">
+        <span>{nameLabel}</span>
+        <input type="text" value={value.name} onChange={(e) => onChange({ ...value, name: e.target.value })} />
+      </label>
+
+      <div className="admin-field">
+        <span>아버지 (선택)</span>
+        <div className="admin-parent-row">
+          <label className="admin-deceased-check">
+            <input
+              type="checkbox"
+              checked={value.fatherDeceased}
+              onChange={(e) => onChange({ ...value, fatherDeceased: e.target.checked })}
+            />
+            고인
+          </label>
+          <input type="text" value={value.father} onChange={(e) => onChange({ ...value, father: e.target.value })} />
+        </div>
+      </div>
+
+      <div className="admin-field">
+        <span>어머니 (선택)</span>
+        <div className="admin-parent-row">
+          <label className="admin-deceased-check">
+            <input
+              type="checkbox"
+              checked={value.motherDeceased}
+              onChange={(e) => onChange({ ...value, motherDeceased: e.target.checked })}
+            />
+            고인
+          </label>
+          <input type="text" value={value.mother} onChange={(e) => onChange({ ...value, mother: e.target.value })} />
+        </div>
+      </div>
+    </fieldset>
+  );
+}
+
 export default function AdminNewOrder() {
   const navigate = useNavigate();
   const [checking, setChecking] = useState(true);
@@ -14,6 +78,9 @@ export default function AdminNewOrder() {
   const [customerName, setCustomerName] = useState('');
   const [names, setNames] = useState('');
   const [title, setTitle] = useState('');
+  const [groom, setGroom] = useState<FamilySide>(emptyFamily);
+  const [bride, setBride] = useState<FamilySide>(emptyFamily);
+  const [deceasedStyle, setDeceasedStyle] = useState<'hanja' | 'flower'>('hanja');
   const [date, setDate] = useState('');
   const [venue, setVenue] = useState('');
   const [greeting, setGreeting] = useState('');
@@ -33,6 +100,8 @@ export default function AdminNewOrder() {
   const [result, setResult] = useState<CreateResult | null>(null);
   const [copied, setCopied] = useState(false);
 
+  const anyDeceased =
+    groom.fatherDeceased || groom.motherDeceased || bride.fatherDeceased || bride.motherDeceased;
   const mapForced = panelType === 'fold';
   const mapChecked = mapForced || hasMap;
 
@@ -59,6 +128,14 @@ export default function AdminNewOrder() {
     form.set('customer_name', customerName);
     form.set('names', names);
     form.set('title', title);
+    for (const [side, value] of [['groom', groom], ['bride', bride]] as const) {
+      form.set(`${side}_name`, value.name);
+      form.set(`${side}_father`, value.father);
+      form.set(`${side}_father_deceased`, String(value.fatherDeceased));
+      form.set(`${side}_mother`, value.mother);
+      form.set(`${side}_mother_deceased`, String(value.motherDeceased));
+    }
+    form.set('deceased_style', deceasedStyle);
     form.set('date', date);
     form.set('venue', venue);
     form.set('greeting', greeting);
@@ -133,8 +210,25 @@ export default function AdminNewOrder() {
           <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="김철수·이영희 고객님" />
         </label>
 
+        <FamilyFields legend="신랑측" nameLabel="신랑 이름" value={groom} onChange={setGroom} />
+        <FamilyFields legend="신부측" nameLabel="신부 이름" value={bride} onChange={setBride} />
+
+        {anyDeceased && (
+          <div className="admin-field">
+            <span>고인 표시 방식</span>
+            <div className="admin-radio-row">
+              <label>
+                <input type="radio" checked={deceasedStyle === 'hanja'} onChange={() => setDeceasedStyle('hanja')} /> 故 (한자)
+              </label>
+              <label>
+                <input type="radio" checked={deceasedStyle === 'flower'} onChange={() => setDeceasedStyle('flower')} /> ✿ (국화꽃)
+              </label>
+            </div>
+          </div>
+        )}
+
         <label className="admin-field">
-          <span>표시될 이름</span>
+          <span>앞면 표시 이름 (비우면 신랑·신부 이름으로 자동)</span>
           <input type="text" value={names} onChange={(e) => setNames(e.target.value)} placeholder="김철수 · 이영희" />
         </label>
 

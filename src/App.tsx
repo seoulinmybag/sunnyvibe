@@ -25,6 +25,17 @@ function makeSamplePages(orientation: Orientation, photo: string | null): Record
     qrUrl: null,
     qrSize: null,
     accountText: null,
+    groom: {
+      name: '김철수',
+      father: { name: '김영수', deceased: false },
+      mother: { name: '박정희', deceased: false },
+    },
+    bride: {
+      name: '이영희',
+      father: { name: '이상훈', deceased: false },
+      mother: { name: '최미경', deceased: false },
+    },
+    deceasedStyle: 'hanja',
     names: '김철수 · 이영희',
     title: '철수와 영희는 평생 사랑할 것을 맹세합니다',
     date: '2026년 10월 10일 토요일 오후 1시',

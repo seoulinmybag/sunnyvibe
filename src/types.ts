@@ -41,6 +41,8 @@ export interface TextField {
   background?: string;
   /** Breathing room between the text and the caption bar's edge. Defaults to ~0.55em. */
   backgroundPadding?: number;
+  /** Extra tracking between glyphs — the widely-spaced 신랑·신부 이름 look (송 지 원). */
+  letterSpacing?: number;
 }
 
 export interface Template {

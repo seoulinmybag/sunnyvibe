@@ -367,3 +367,48 @@ code {
   border-radius: 8px;
   border: 1px solid var(--border);
 }
+
+.admin-fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 14px 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.admin-fieldset legend {
+  padding: 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.admin-parent-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-parent-row input[type='text'] {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 14px;
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.admin-deceased-check {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}

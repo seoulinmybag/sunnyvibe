@@ -36,19 +36,51 @@ const FRONT: Record<Orientation, {
 const BACK: Record<Orientation, {
   greetingY: number;
   greetingSize: number;
+  familyParentsY: number;
+  familyParentsSize: number;
+  familyNameY: number;
+  familyNameSize: number;
   optionsTop: number;
+  /** 혼주 블록이 들어가면 옵션 스택이 그만큼 아래에서 시작한다. */
+  optionsTopWithFamily: number;
   optionsBottom: number;
   dateY: number;
   dateSize: number;
   venueY: number;
   venueSize: number;
 }> = {
-  landscape: { greetingY: 0.08, greetingSize: 16, optionsTop: 0.26, optionsBottom: 0.78, dateY: 0.84, dateSize: 18, venueY: 0.905, venueSize: 16 },
-  portrait: { greetingY: 0.1, greetingSize: 16, optionsTop: 0.3, optionsBottom: 0.8, dateY: 0.855, dateSize: 18, venueY: 0.91, venueSize: 16 },
+  landscape: {
+    greetingY: 0.08, greetingSize: 16,
+    familyParentsY: 0.25, familyParentsSize: 12, familyNameY: 0.3, familyNameSize: 19,
+    optionsTop: 0.26, optionsTopWithFamily: 0.42, optionsBottom: 0.78,
+    dateY: 0.84, dateSize: 18, venueY: 0.905, venueSize: 16,
+  },
+  portrait: {
+    greetingY: 0.1, greetingSize: 16,
+    familyParentsY: 0.3, familyParentsSize: 13, familyNameY: 0.345, familyNameSize: 21,
+    optionsTop: 0.3, optionsTopWithFamily: 0.46, optionsBottom: 0.8,
+    dateY: 0.855, dateSize: 18, venueY: 0.91, venueSize: 16,
+  },
 };
 
 /** 옵션(계좌/약도/QR)이 하나도 없을 때 날짜·장소를 끌어올려 아래가 텅 비지 않게 한다. */
 const BACK_NO_OPTIONS = { dateY: 0.56, venueY: 0.625 };
+
+/** 고인 표시: 한자 '故' 또는 국화꽃. 인쇄 문제가 없도록 이모지가 아닌 일반 글리프를 쓴다. */
+export const DECEASED_MARKS = { hanja: '故', flower: '✿' } as const;
+export type DeceasedStyle = keyof typeof DECEASED_MARKS;
+
+export interface ParentInfo {
+  name: string;
+  deceased: boolean;
+}
+
+export interface FamilyInfo {
+  /** 신랑 또는 신부 본인 이름 */
+  name: string;
+  father: ParentInfo;
+  mother: ParentInfo;
+}
 
 export interface ImageSize {
   width: number;
@@ -68,6 +100,10 @@ export interface LayoutOptions {
   qrUrl: string | null;
   qrSize: ImageSize | null;
   accountText: string | null;
+  /** 뒷면 혼주 블록용. 이름이 하나도 없으면 블록 자체가 생략된다. */
+  groom: FamilyInfo;
+  bride: FamilyInfo;
+  deceasedStyle: DeceasedStyle;
   names: string;
   /** 앞면 하단 자막 문구. 비우면 자막 바 없이 빈 슬롯으로 남는다. */
   title: string;
@@ -137,6 +173,61 @@ function makeImageIconInBox(uid: string, src: string, natural: ImageSize | null,
   };
 }
 
+function markedName(parent: ParentInfo, style: DeceasedStyle): string {
+  const name = parent.name.trim();
+  if (!name) return '';
+  return parent.deceased ? `${DECEASED_MARKS[style]} ${name}` : name;
+}
+
+/** '송건철, 유지선의 아들' — 한 분만 입력해도 그 분만 들어간다. */
+function parentsLine(family: FamilyInfo, childWord: string, style: DeceasedStyle): string {
+  const names = [markedName(family.father, style), markedName(family.mother, style)].filter(Boolean);
+  if (names.length === 0) return '';
+  return `${names.join(', ')}의 ${childWord}`;
+}
+
+function hasFamilyInfo(opts: LayoutOptions): boolean {
+  return [opts.groom, opts.bride].some(
+    (f) => f.name.trim() || f.father.name.trim() || f.mother.name.trim(),
+  );
+}
+
+/**
+ * 레퍼런스 뒷면의 혼주 블록: 좌측은 신랑측, 우측은 신부측.
+ * 값이 비어도 슬롯은 남겨서 고객이 편집기에서 직접 채울 수 있게 한다.
+ */
+function makeFamilyBlock(
+  opts: LayoutOptions,
+  leftX: number,
+  rightX: number,
+  colWidth: number,
+  parentsY: number,
+  parentsSize: number,
+  nameY: number,
+  nameSize: number,
+  startZ: number,
+): TextField[] {
+  const tracking = Math.round(nameSize * 0.18);
+  const sides = [
+    { key: 'groom', family: opts.groom, x: leftX, childWord: '아들', parentsLabel: '신랑측 혼주', nameLabel: '신랑 이름' },
+    { key: 'bride', family: opts.bride, x: rightX, childWord: '딸', parentsLabel: '신부측 혼주', nameLabel: '신부 이름' },
+  ] as const;
+  let z = startZ;
+  return sides.flatMap((side) => [
+    makeText(
+      `${side.key}-parents`,
+      side.parentsLabel,
+      parentsLine(side.family, side.childWord, opts.deceasedStyle),
+      { x: side.x, y: parentsY, width: colWidth },
+      parentsSize,
+      z++,
+    ),
+    makeText(`${side.key}-name`, side.nameLabel, side.family.name, { x: side.x, y: nameY, width: colWidth }, nameSize, z++, {
+      letterSpacing: tracking,
+    }),
+  ]);
+}
+
 function makeAccountText(text: string | null, box: Box, zIndex: number): TextField {
   return makeText('account', '계좌정보', text ?? '', { x: box.x, y: box.y + box.height * 0.15, width: box.width }, 16, zIndex);
 }
@@ -198,10 +289,30 @@ function buildSinglePanelBack(opts: LayoutOptions): PageState {
   ];
 
   let z = 2;
+  const showFamily = hasFamilyInfo(opts);
+  if (showFamily) {
+    const colWidth = w * 0.39;
+    texts.push(
+      ...makeFamilyBlock(
+        opts,
+        w * 0.07,
+        w * 0.54,
+        colWidth,
+        h * cfg.familyParentsY,
+        cfg.familyParentsSize,
+        h * cfg.familyNameY,
+        cfg.familyNameSize,
+        z,
+      ),
+    );
+    z += 4;
+  }
+
+  const optionsTop = showFamily ? cfg.optionsTopWithFamily : cfg.optionsTop;
   if (enabled.length > 0) {
-    const bandHeight = ((cfg.optionsBottom - cfg.optionsTop) / enabled.length) * h;
+    const bandHeight = ((cfg.optionsBottom - optionsTop) / enabled.length) * h;
     enabled.forEach((kind, i) => {
-      const box: Box = { x, y: h * cfg.optionsTop + i * bandHeight, width: fieldWidth, height: bandHeight };
+      const box: Box = { x, y: h * optionsTop + i * bandHeight, width: fieldWidth, height: bandHeight };
       if (kind === 'account') texts.push(makeAccountText(opts.accountText, box, z++));
       if (kind === 'map') icons.push(makeImageIconInBox('layout-map', opts.mapUrl!, opts.mapSize, box, z++));
       if (kind === 'qr') icons.push(makeImageIconInBox('layout-qr', opts.qrUrl!, opts.qrSize, box, z++));
@@ -244,11 +355,19 @@ function buildFoldBack(opts: LayoutOptions): PageState {
   ];
   const texts: TextField[] = [
     makeText('message', '인사말', opts.greeting || DEFAULT_GREETING, { x: rightX, y: h * 0.12, width: colWidth }, 16, 2),
-    makeText('date', '날짜', opts.date, { x: rightX, y: h * 0.72, width: colWidth }, 17, 3),
-    makeText('venue', '장소', opts.venue, { x: rightX, y: h * 0.79, width: colWidth }, 15, 4),
+    makeText('date', '날짜', opts.date, { x: rightX, y: h * 0.74, width: colWidth }, 17, 3),
+    makeText('venue', '장소', opts.venue, { x: rightX, y: h * 0.81, width: colWidth }, 15, 4),
   ];
 
   let z = 5;
+  if (hasFamilyInfo(opts)) {
+    // 우측 패널을 다시 반으로 나눠 신랑측/신부측을 나란히 둔다
+    const subWidth = colWidth / 2 - w * 0.01;
+    texts.push(
+      ...makeFamilyBlock(opts, rightX, rightX + colWidth - subWidth, subWidth, h * 0.52, 11, h * 0.575, 17, z),
+    );
+    z += 4;
+  }
   const extrasBandHeight = ((0.9 - mapBottom) / Math.max(extras.length, 1)) * h;
   extras.forEach((kind, i) => {
     const box: Box = { x: leftX, y: h * mapBottom + i * extrasBandHeight, width: colWidth, height: extrasBandHeight };

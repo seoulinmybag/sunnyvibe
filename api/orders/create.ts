@@ -8,7 +8,7 @@ import { requireAdmin } from '../_auth.js';
 import { parseForm } from '../_parseForm.js';
 import { getSupabaseAdmin } from '../_supabaseAdmin.js';
 import { buildInitialPages } from '../../src/lib/layoutGenerator.js';
-import type { ImageSize, LayoutOptions } from '../../src/lib/layoutGenerator.js';
+import type { DeceasedStyle, FamilyInfo, ImageSize, LayoutOptions } from '../../src/lib/layoutGenerator.js';
 
 export const config = { api: { bodyParser: false } };
 
@@ -33,6 +33,21 @@ async function uploadOne(bucket: string, path: string, file: FormidableFile): Pr
     .upload(path, buffer, { contentType: file.mimetype ?? undefined, upsert: true });
   if (error) throw new Error(`upload to ${bucket} failed: ${error.message}`);
   return { path, buffer };
+}
+
+/** 부모님 이름은 두 분 다 선택 입력 — 한 분만 넣는 고객도 있어서 빈 값을 그대로 허용한다. */
+function readFamily(fields: Record<string, string>, side: 'groom' | 'bride'): FamilyInfo {
+  return {
+    name: (fields[`${side}_name`] ?? '').trim(),
+    father: {
+      name: (fields[`${side}_father`] ?? '').trim(),
+      deceased: fields[`${side}_father_deceased`] === 'true',
+    },
+    mother: {
+      name: (fields[`${side}_mother`] ?? '').trim(),
+      deceased: fields[`${side}_mother_deceased`] === 'true',
+    },
+  };
 }
 
 function probeSize(buffer: Buffer): ImageSize | null {
@@ -87,6 +102,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const orientation = fields.orientation === 'portrait' ? 'portrait' : 'landscape';
+  const groom = readFamily(fields, 'groom');
+  const bride = readFamily(fields, 'bride');
+  const deceasedStyle: DeceasedStyle = fields.deceased_style === 'flower' ? 'flower' : 'hanja';
   const id = randomUUID();
 
   try {
@@ -131,7 +149,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       qrUrl: qrSigned?.signedUrl ?? null,
       qrSize,
       accountText: hasAccount ? (fields.account_text ?? '') : null,
-      names: fields.names || '신랑 · 신부',
+      groom,
+      bride,
+      deceasedStyle,
+      // 앞면 표시 이름은 비워두면 신랑·신부 이름으로 자동 조합
+      names: fields.names?.trim() || [groom.name, bride.name].filter(Boolean).join(' · ') || '신랑 · 신부',
       title: fields.title || '',
       date: fields.date || '',
       venue: fields.venue || '',
@@ -145,8 +167,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { error: insertError } = await admin.from('orders').insert({
       id,
       customer_name: customerName,
-      groom_name: fields.groom_name || null,
-      bride_name: fields.bride_name || null,
+      groom_name: groom.name || null,
+      bride_name: bride.name || null,
       wedding_date: fields.date || null,
       venue: fields.venue || null,
       greeting: fields.greeting || null,

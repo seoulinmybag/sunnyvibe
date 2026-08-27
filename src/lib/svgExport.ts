@@ -60,10 +60,14 @@ function anchorX(field: TextField): number {
 /** CJK glyphs are ~1em wide, Latin/digits roughly half that — enough to size a caption bar without a text engine. */
 const WIDE_CHAR = /[\u1100-\u11FF\u3000-\u303F\u3130-\u318F\u4E00-\u9FFF\uAC00-\uD7AF\uFF00-\uFFEF]/;
 
-function estimateLineWidth(line: string, fontSize: number): number {
+function estimateLineWidth(line: string, fontSize: number, letterSpacing = 0): number {
   let units = 0;
-  for (const ch of line) units += WIDE_CHAR.test(ch) ? 1 : 0.52;
-  return units * fontSize;
+  let count = 0;
+  for (const ch of line) {
+    units += WIDE_CHAR.test(ch) ? 1 : 0.52;
+    count++;
+  }
+  return units * fontSize + Math.max(0, count - 1) * letterSpacing;
 }
 
 /**
@@ -75,7 +79,7 @@ function renderTextBackground(field: TextField, lines: string[]): string {
   const padding = field.backgroundPadding ?? field.fontSize * 0.55;
   const lineHeight = field.fontSize * 1.3;
   const textWidth = Math.min(
-    Math.max(...lines.map((line) => estimateLineWidth(line, field.fontSize))),
+    Math.max(...lines.map((line) => estimateLineWidth(line, field.fontSize, field.letterSpacing))),
     field.width,
   );
   const textHeight = field.fontSize + (lines.length - 1) * lineHeight;
@@ -103,7 +107,8 @@ function renderText(field: TextField): string {
     .map((line, i) => `<tspan x="${x}" y="${firstBaselineY + i * lineHeight}">${esc(line)}</tspan>`)
     .join('');
   const background = field.background && field.text.trim() !== '' ? renderTextBackground(field, lines) : '';
-  return `${background}<text font-family="${esc(field.fontFamily)}" font-size="${field.fontSize}" fill="${esc(field.fill)}" text-anchor="${anchor}">${tspans}</text>`;
+  const tracking = field.letterSpacing ? ` letter-spacing="${field.letterSpacing}"` : '';
+  return `${background}<text font-family="${esc(field.fontFamily)}" font-size="${field.fontSize}" fill="${esc(field.fill)}" text-anchor="${anchor}"${tracking}>${tspans}</text>`;
 }
 
 /**

@@ -209,7 +209,7 @@ function TextNode({
     measure();
     // web fonts land after the first paint and change the metrics — re-measure once they're ready
     document.fonts?.ready.then(measure).catch(() => {});
-  }, [hasBackground, field.text, field.fontSize, field.fontFamily, field.width, field.align]);
+  }, [hasBackground, field.text, field.fontSize, field.fontFamily, field.width, field.align, field.letterSpacing]);
 
   const padding = field.backgroundPadding ?? Math.round(field.fontSize * 0.55);
   const barLeft =
@@ -244,6 +244,7 @@ function TextNode({
       fontFamily={field.fontFamily}
       fill={field.fill}
       align={field.align}
+      letterSpacing={field.letterSpacing ?? 0}
       draggable={interactive}
       opacity={isEditing ? 0 : 1}
       onClick={interactive ? onSelect : undefined}
