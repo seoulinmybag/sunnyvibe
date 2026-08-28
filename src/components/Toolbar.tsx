@@ -79,6 +79,7 @@ export default function Toolbar({
     const originalSide = activeSide;
     setPreviewing(true);
     try {
+      await document.fonts?.ready;
       // screen-sized snapshots, not print resolution — this is a look-over, not an export
       const pixelRatio = 1.5;
       onSwitchSide('front');
@@ -105,6 +106,8 @@ export default function Toolbar({
     const originalSide = activeSide;
     setConfirming(true);
     try {
+      // the print PNG bakes in whatever the canvas has at this moment — wait for the webfonts
+      await document.fonts?.ready;
       const pixelRatio = spec.printWidthPx / spec.displayWidth;
       const pageOrientation = orientation === 'landscape' ? 'landscape' : 'portrait';
 

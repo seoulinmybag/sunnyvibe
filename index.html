@@ -5,6 +5,24 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>wedding-invitation-editor</title>
+    <!-- 편집기 글꼴. 목록은 src/data/fonts.ts와 정확히 같아야 한다 (전부 OFL = 상업적 사용 가능).
+         한글 폰트는 unicode-range로 잘려서 제공되므로 실제로 쓰이는 조각만 내려받는다. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- media/onload 스왑: 28개(한글 16개) 분량이라 CSS가 200KB대다. 렌더를 막지 않게 늦게 적용하고,
+         캔버스는 어차피 폰트 로드 후 다시 그린다 (CanvasEditor의 loadFonts) -->
+    <link
+      media="print"
+      onload="this.media='all'"
+      href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR&family=Nanum+Myeongjo&family=Song+Myung&family=Gowun+Batang&family=Hahmlet&family=Diphylleia&family=Noto+Sans+KR&family=Gowun+Dodum&family=Nanum+Gothic&family=IBM+Plex+Sans+KR&family=Nanum+Pen+Script&family=Nanum+Brush+Script&family=Gaegu&family=Dongle&family=Hi+Melody&family=Gamja+Flower&family=Playfair+Display&family=Cormorant+Garamond&family=EB+Garamond&family=Libre+Baskerville&family=Montserrat&family=Josefin+Sans&family=Lato&family=Great+Vibes&family=Parisienne&family=Dancing+Script&family=Sacramento&family=Caveat&display=swap"
+      rel="stylesheet"
+    />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR&family=Noto+Sans+KR&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
   </head>
   <body>
     <div id="root"></div>

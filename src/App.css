@@ -853,3 +853,14 @@ button.secondary:disabled {
   opacity: 0.35;
   cursor: not-allowed;
 }
+
+.font-preview {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 18px;
+  line-height: 1.4;
+  color: var(--text-h);
+  text-align: center;
+}

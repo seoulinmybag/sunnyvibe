@@ -1,3 +1,4 @@
+import { FONT_GROUPS } from '../data/fonts';
 import type { SelectedElement, TextField } from '../types';
 
 interface Props {
@@ -16,12 +17,6 @@ function luminance(hex: string): number {
   const n = parseInt(m[1], 16);
   return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
 }
-
-const FONT_OPTIONS = [
-  { value: "'Noto Serif KR', serif", label: '명조 (세리프)' },
-  { value: "'Pretendard', system-ui, sans-serif", label: '고딕 (산세리프)' },
-  { value: "cursive", label: '손글씨체' },
-];
 
 export default function TextFieldsPanel({ texts, selected, onChange, onSelect }: Props) {
   const selectedField =
@@ -75,11 +70,19 @@ export default function TextFieldsPanel({ texts, selected, onChange, onSelect }:
                 value={selectedField.fontFamily}
                 onChange={(e) => onChange(selectedField.id, { fontFamily: e.target.value })}
               >
-                {FONT_OPTIONS.map((f) => (
-                  <option key={f.value} value={f.value}>
-                    {f.label}
-                  </option>
+                {FONT_GROUPS.map((group) => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.options.map((f) => (
+                      <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>
+                        {f.label}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
+                {/* 예전 주문이 쓰던 글꼴이 목록에 없으면 선택이 풀려버리므로 그대로 남겨둔다 */}
+                {!FONT_GROUPS.some((g) => g.options.some((f) => f.value === selectedField.fontFamily)) && (
+                  <option value={selectedField.fontFamily}>기존 글꼴</option>
+                )}
               </select>
             </label>
           </div>
@@ -112,6 +115,9 @@ export default function TextFieldsPanel({ texts, selected, onChange, onSelect }:
               </label>
             )}
           </div>
+          <p className="font-preview" style={{ fontFamily: selectedField.fontFamily }}>
+            가나다라 ABCdef 123
+          </p>
           <div className="style-row align-row">
             {(['left', 'center', 'right'] as const).map((a) => (
               <button

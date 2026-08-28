@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Stage, Layer, Rect, Text as KonvaText, Image as KonvaImage, Transformer } from 'react-konva';
 import type Konva from 'konva';
 import useImage from 'use-image';
+import { loadFonts } from '../data/fonts';
 import { getIconDefaultColor, getIconSrc, isLibraryIcon, isRecolorableIcon } from '../data/icons';
 import { sortByZIndex } from '../lib/layering';
 import type { PlacedIcon, TextField, Template, SelectedElement } from '../types';
@@ -310,6 +311,20 @@ export default function CanvasEditor({
     ro.observe(el);
     return () => ro.disconnect();
   }, [width]);
+
+  // Canvas text never triggers a webfont download the way DOM text does, so the faces this page
+  // uses are loaded by hand and the stage repainted — otherwise Konva measures and draws a fallback.
+  const fontKey = texts.map((t) => t.fontFamily).join('|');
+  useEffect(() => {
+    let cancelled = false;
+    const families = [...new Set(fontKey.split('|').filter(Boolean))];
+    loadFonts(families).then(() => {
+      if (!cancelled) stageRef.current?.batchDraw();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [fontKey, stageRef]);
 
   useEffect(() => {
     const tr = trRef.current;
