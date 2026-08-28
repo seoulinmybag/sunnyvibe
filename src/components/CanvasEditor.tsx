@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Stage, Layer, Rect, Text as KonvaText, Image as KonvaImage, Transformer } from 'react-konva';
 import type Konva from 'konva';
 import useImage from 'use-image';
-import { getIconDefaultColor, getIconSrc, isLibraryIcon } from '../data/icons';
+import { getIconDefaultColor, getIconSrc, isLibraryIcon, isRecolorableIcon } from '../data/icons';
 import { sortByZIndex } from '../lib/layering';
 import type { PlacedIcon, TextField, Template, SelectedElement } from '../types';
 
@@ -371,7 +371,7 @@ export default function CanvasEditor({
   const layered = sortByZIndex(icons, texts);
 
   const selectedIcon = selected?.type === 'icon' ? icons.find((i) => i.uid === selected.uid) : undefined;
-  const showColorSwatch = !!selectedIcon && isLibraryIcon(selectedIcon.iconId);
+  const showColorSwatch = !!selectedIcon && isRecolorableIcon(selectedIcon.iconId);
   const showCropButton = !!selectedIcon && !isLibraryIcon(selectedIcon.iconId);
   const croppingIcon = croppingUid ? icons.find((i) => i.uid === croppingUid) : undefined;
   const editingField = editingTextId ? texts.find((t) => t.id === editingTextId) : undefined;

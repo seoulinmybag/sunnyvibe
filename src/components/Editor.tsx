@@ -80,15 +80,19 @@ export default function Editor({ orientation: initialOrientation, initialPages, 
     const def = ICONS.find((i) => i.id === iconId);
     if (!def) return;
     const uid = `icon-${++uidCounter}`;
-    const size = 80;
+    // fit inside a square box at the artwork's own ratio — the PNG icons aren't square
+    const box = 110;
+    const ratio = Math.min(box / def.naturalWidth, box / def.naturalHeight);
+    const width = def.naturalWidth * ratio;
+    const height = def.naturalHeight * ratio;
     const placed: PlacedIcon = {
       uid,
       iconId,
       src: def.src,
-      x: spec.displayWidth / 2 - size / 2,
-      y: spec.displayHeight / 2 - size / 2,
-      width: size,
-      height: size,
+      x: spec.displayWidth / 2 - width / 2,
+      y: spec.displayHeight / 2 - height / 2,
+      width,
+      height,
       rotation: 0,
       zIndex: ++zCounter.current,
     };

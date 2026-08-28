@@ -1,13 +1,89 @@
 import type { IconDef } from '../types';
 
 /**
- * Placeholder icon set. Each icon is a hand-drawn inline SVG turned into a data URI
- * so the editor works with zero external assets. To swap in real artwork later,
- * drop files into `src/assets/icons/` and replace `buildSrc` below to return an
- * `import`ed file path instead — nothing else in the app needs to change (recoloring
- * would then need to be done as real color variants, since raster/SVG files can't be
- * recolored on the fly the way these generated SVGs are).
+ * Two icon sources live here:
+ *  - ART_*: the real crayon-style artwork (PNG, full colour, so not recolorable).
+ *    Vite emits each file as a hashed asset URL; they're trimmed to their own
+ *    bounding box, so `width`/`height` below are the real proportions and the
+ *    editor places them without squashing.
+ *  - the generated line SVGs further down: placeholders for the categories that
+ *    don't have real artwork yet (하트/사랑, 꽃/식물, 장식/기타). Those stay
+ *    recolorable because they're built from a template at request time.
  */
+const ART_URLS = import.meta.glob('../assets/icons/**/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+}) as Record<string, string>;
+
+interface ArtSpec {
+  slug: string;
+  label: string;
+  width: number;
+  height: number;
+}
+
+const WEDDING_ART: ArtSpec[] = [
+  { slug: 'ring', label: '웨딩링', width: 400, height: 386 },
+  { slug: 'ring-sparkle', label: '반짝 웨딩링', width: 318, height: 400 },
+  { slug: 'dress', label: '웨딩드레스', width: 288, height: 400 },
+  { slug: 'tuxedo', label: '턱시도', width: 314, height: 400 },
+  { slug: 'bouquet', label: '부케', width: 331, height: 400 },
+  { slug: 'cake', label: '웨딩케이크', width: 382, height: 400 },
+  { slug: 'glasses', label: '축배잔', width: 394, height: 400 },
+  { slug: 'bell', label: '웨딩종', width: 344, height: 400 },
+  { slug: 'church', label: '교회', width: 341, height: 400 },
+  { slug: 'car', label: '웨딩카', width: 400, height: 201 },
+  { slug: 'camera', label: '카메라', width: 400, height: 314 },
+  { slug: 'letter', label: '청첩장', width: 400, height: 359 },
+  { slug: 'book', label: '방명록', width: 338, height: 400 },
+  { slug: 'gift', label: '선물상자', width: 400, height: 343 },
+  { slug: 'hands', label: '맞잡은 손', width: 400, height: 228 },
+  { slug: 'lock', label: '사랑의 자물쇠', width: 400, height: 343 },
+  { slug: 'tiara', label: '티아라', width: 400, height: 315 },
+];
+
+const WEATHER_ART: ArtSpec[] = [
+  { slug: 'sun', label: '해', width: 399, height: 400 },
+  { slug: 'sun-red', label: '빨간 해', width: 400, height: 376 },
+  { slug: 'sun-cloud', label: '해와 구름', width: 400, height: 390 },
+  { slug: 'cloud', label: '구름', width: 400, height: 266 },
+  { slug: 'cloud-white', label: '하얀 구름', width: 400, height: 232 },
+  { slug: 'cloud-dark', label: '먹구름', width: 400, height: 252 },
+  { slug: 'cloud-rain', label: '비구름', width: 342, height: 400 },
+  { slug: 'cloud-rain-2', label: '비구름 2', width: 395, height: 400 },
+  { slug: 'cloud-snow', label: '눈구름', width: 400, height: 368 },
+  { slug: 'cloud-star', label: '별과 구름', width: 400, height: 332 },
+  { slug: 'rain', label: '비', width: 400, height: 365 },
+  { slug: 'snow', label: '눈', width: 391, height: 400 },
+  { slug: 'umbrella', label: '우산', width: 317, height: 400 },
+  { slug: 'puddle', label: '물웅덩이', width: 400, height: 241 },
+  { slug: 'lightning', label: '번개', width: 313, height: 400 },
+  { slug: 'wind', label: '바람', width: 400, height: 225 },
+  { slug: 'tornado', label: '회오리', width: 350, height: 400 },
+  { slug: 'rainbow', label: '무지개', width: 400, height: 202 },
+  { slug: 'moon', label: '달', width: 364, height: 400 },
+  { slug: 'moon-star', label: '달과 별', width: 400, height: 329 },
+  { slug: 'star', label: '별', width: 400, height: 378 },
+  { slug: 'sparkle', label: '반짝임', width: 394, height: 400 },
+  { slug: 'thermometer', label: '온도계', width: 181, height: 400 },
+  { slug: 'sunset', label: '일몰', width: 400, height: 274 },
+];
+
+function artIcon(folder: 'wedding' | 'weather', category: string, spec: ArtSpec): IconDef {
+  const src = ART_URLS[`../assets/icons/${folder}/${spec.slug}.png`];
+  return {
+    id: `${folder}-${spec.slug}`,
+    label: spec.label,
+    category,
+    recolorable: false,
+    naturalWidth: spec.width,
+    naturalHeight: spec.height,
+    src,
+    getSrc: () => src,
+  };
+}
+
 function svgToDataUri(svg: string): string {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
@@ -28,6 +104,9 @@ function icon(
     label,
     category,
     defaultColor,
+    recolorable: true,
+    naturalWidth: 64,
+    naturalHeight: 64,
     src: svgToDataUri(buildSvg(defaultColor, inner)),
     getSrc: (color: string) => svgToDataUri(buildSvg(color, inner)),
   };
@@ -37,9 +116,12 @@ const GOLD = '#b28a5b';
 const PINK = '#d98ea1';
 const GREEN = '#7c9473';
 
-export const ICON_CATEGORIES = ['하트/사랑', '꽃/식물', '웨딩 소품', '장식/기타'] as const;
+export const ICON_CATEGORIES = ['웨딩', '날씨', '하트/사랑', '꽃/식물', '장식/기타'] as const;
 
 export const ICONS: IconDef[] = [
+  ...WEDDING_ART.map((spec) => artIcon('wedding', '웨딩', spec)),
+  ...WEATHER_ART.map((spec) => artIcon('weather', '날씨', spec)),
+
   // 하트/사랑
   icon('heart', '하트', '하트/사랑', PINK, () => `<path d="M32 54S8 40 8 22a13 13 0 0 1 24-7 13 13 0 0 1 24 7c0 18-24 32-24 32Z"/>`),
   icon('double-heart', '더블하트', '하트/사랑', PINK, () => `
@@ -78,20 +160,6 @@ export const ICONS: IconDef[] = [
   `),
   icon('sprout', '새싹', '꽃/식물', GREEN, () => `<path d="M32 54V30"/><path d="M32 30c0-10-8-14-16-14 0 10 6 16 16 14Z"/><path d="M32 34c0-8 8-12 16-12 0 8-6 14-16 12Z"/>`),
 
-  // 웨딩 소품
-  icon('champagne', '샴페인잔', '웨딩 소품', GOLD, () => `
-    <path d="M22 10h20l-4 18a6 6 0 0 1-12 0L22 10Z"/>
-    <path d="M32 34v14M24 48h16"/>
-  `),
-  icon('bell', '종', '웨딩 소품', GOLD, () => `<path d="M20 42c0-14 4-24 12-24s12 10 12 24"/><path d="M16 42h32"/><path d="M28 48a4 4 0 0 0 8 0"/><path d="M32 12v4"/>`),
-  icon('cake', '웨딩케이크', '웨딩 소품', GOLD, () => `
-    <path d="M12 52h40v-8a4 4 0 0 0-4-4H16a4 4 0 0 0-4 4v8Z"/>
-    <path d="M16 40h32v-6a4 4 0 0 0-4-4H20a4 4 0 0 0-4 4v6Z"/>
-    <path d="M32 30v-6M28 20c0-3 4-3 4-6s-4-3-4-6"/>
-  `),
-  icon('envelope', '초대장', '웨딩 소품', GOLD, () => `<rect x="10" y="18" width="44" height="30" rx="3"/><path d="M12 20l20 16 20-16"/>`),
-  icon('ribbon', '리본', '웨딩 소품', PINK, () => `<path d="M32 26c-10-10-22-6-22 2s12 8 22 2Zm0 0c10-10 22-6 22 2s-12 8-22 2Z"/><path d="M32 26v28"/><path d="M32 54l-6 8M32 54l6 8"/>`),
-
   // 장식/기타
   icon('star', '별', '장식/기타', GOLD, () => `<path d="M32 8l6 16 17 2-13 11 4 17-14-9-14 9 4-17-13-11 17-2Z"/>`),
   icon('sparkle', '반짝임', '장식/기타', GOLD, () => `<path d="M32 8v14M32 42v14M8 32h14M42 32h14M16 16l10 10M38 38l10 10M48 16 38 26M26 38 16 48"/>`),
@@ -117,4 +185,13 @@ export function getIconSrc(iconId: string, color?: string): string | undefined {
 
 export function getIconDefaultColor(iconId: string): string {
   return ICONS.find((i) => i.id === iconId)?.defaultColor ?? '#000000';
+}
+
+/** Full-colour artwork can't be tinted — only the generated line icons offer a colour swatch. */
+export function isRecolorableIcon(iconId: string): boolean {
+  return ICONS.find((i) => i.id === iconId)?.recolorable === true;
+}
+
+export function getIconDef(iconId: string): IconDef | undefined {
+  return ICONS.find((i) => i.id === iconId);
 }

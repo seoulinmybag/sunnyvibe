@@ -2,7 +2,13 @@ export interface IconDef {
   id: string;
   label: string;
   category: string;
-  defaultColor: string;
+  /** Only set for recolorable line icons. */
+  defaultColor?: string;
+  /** false for full-colour artwork, which can't be tinted. */
+  recolorable: boolean;
+  /** The artwork's own proportions, so placing it doesn't squash it. */
+  naturalWidth: number;
+  naturalHeight: number;
   /** Image source at the default color — used for the icon library tile. */
   src: string;
   /** Regenerate the icon's image src at an arbitrary color. */

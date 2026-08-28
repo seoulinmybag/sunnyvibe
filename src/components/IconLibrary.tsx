@@ -36,7 +36,7 @@ export default function IconLibrary({ onAddIcon }: Props) {
           </button>
         ))}
       </div>
-      <p className="hint">아이콘을 클릭하면 청첩장 중앙에 추가돼요. 총 {ICONS.length}개 (임시 아이콘)</p>
+      <p className="hint">아이콘을 클릭하면 청첩장 중앙에 추가돼요. 총 {ICONS.length}개</p>
     </div>
   );
 }

@@ -18,5 +18,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["api", "src/lib", "src/types.ts", "src/data"]
+  "include": ["api", "src/lib", "src/types.ts", "src/data/orientation.ts", "src/data/templates.ts"]
 }
