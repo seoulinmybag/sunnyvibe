@@ -6,13 +6,16 @@ import OrientationPicker from './OrientationPicker';
 import ImageUpload from './ImageUpload';
 import TemplatePicker from './TemplatePicker';
 import TextFieldsPanel from './TextFieldsPanel';
+import LayerPanel from './LayerPanel';
 import PageSwitcher from './PageSwitcher';
 import Toolbar from './Toolbar';
 import logoUrl from '../assets/logo.png';
+import { sortByZIndex } from '../lib/layering';
 import { ICONS } from '../data/icons';
 import { TEMPLATES } from '../data/templates';
 import { ORIENTATIONS } from '../data/orientation';
 import type { ConfirmPayload } from './Toolbar';
+import type { LayerMove, LayerTarget } from './LayerPanel';
 import type { Orientation, PageState, PlacedIcon, SelectedElement, Side, TextField, Template } from '../types';
 import '../App.css';
 
@@ -145,14 +148,47 @@ export default function Editor({ orientation: initialOrientation, initialPages, 
     }
   }
 
+  /**
+   * Rewrites every zIndex on the page as 0..n-1 around the move. The old scheme just bumped a
+   * shared counter, which drifts out of step with what the layer list shows (and made "뒤로"
+   * land above elements that were never touched).
+   */
+  function moveLayer(target: LayerTarget, move: LayerMove) {
+    updateActivePage((page) => {
+      const ordered = sortByZIndex(page.icons, page.texts);
+      const index = ordered.findIndex((item) =>
+        item.kind === 'icon'
+          ? target.type === 'icon' && item.data.uid === target.uid
+          : target.type === 'text' && item.data.id === target.id,
+      );
+      if (index === -1) return page;
+
+      const to =
+        move === 'forward' ? index + 1 : move === 'backward' ? index - 1 : move === 'front' ? ordered.length - 1 : 0;
+      if (to === index || to < 0 || to >= ordered.length) return page;
+
+      const [moved] = ordered.splice(index, 1);
+      ordered.splice(to, 0, moved);
+
+      const iconZ = new Map<string, number>();
+      const textZ = new Map<string, number>();
+      ordered.forEach((item, i) => {
+        if (item.kind === 'icon') iconZ.set(item.data.uid, i);
+        else textZ.set(item.data.id, i);
+      });
+      zCounter.current = ordered.length;
+
+      return {
+        ...page,
+        icons: page.icons.map((i) => ({ ...i, zIndex: iconZ.get(i.uid) ?? i.zIndex })),
+        texts: page.texts.map((t) => ({ ...t, zIndex: textZ.get(t.id) ?? t.zIndex })),
+      };
+    });
+  }
+
   function handleReorder(dir: 'front' | 'back') {
     if (!selected) return;
-    const z = dir === 'front' ? ++zCounter.current : --zCounter.current;
-    if (selected.type === 'icon') {
-      handleIconChange(selected.uid, { zIndex: z });
-    } else {
-      handleTextChange(selected.id, { zIndex: z });
-    }
+    moveLayer(selected, dir);
   }
 
   function handleOrientationChange(next: Orientation) {
@@ -161,9 +197,19 @@ export default function Editor({ orientation: initialOrientation, initialPages, 
     const newSpec = ORIENTATIONS[next];
     const scaleX = newSpec.displayWidth / oldSpec.displayWidth;
     const scaleY = newSpec.displayHeight / oldSpec.displayHeight;
+    // 사진·아이콘은 가로/세로를 따로 늘리면 그림이 찌그러진다. 한 배율(작은 쪽)로만 줄이고,
+    // 카드 안에서의 상대적인 중심 위치를 유지해 원래 있던 자리로 옮긴다.
+    const uniform = Math.min(scaleX, scaleY);
     const rescale = (p: PageState): PageState => ({
       ...p,
-      icons: p.icons.map((i) => ({ ...i, x: i.x * scaleX, y: i.y * scaleY, width: i.width * scaleX, height: i.height * scaleY })),
+      icons: p.icons.map((i) => {
+        const width = i.width * uniform;
+        const height = i.height * uniform;
+        const centerX = ((i.x + i.width / 2) / oldSpec.displayWidth) * newSpec.displayWidth;
+        const centerY = ((i.y + i.height / 2) / oldSpec.displayHeight) * newSpec.displayHeight;
+        return { ...i, x: centerX - width / 2, y: centerY - height / 2, width, height };
+      }),
+      // 텍스트는 그림이 아니라서 폭이 카드 너비를 따라가는 게 자연스럽다
       texts: p.texts.map((t) => ({ ...t, x: t.x * scaleX, y: t.y * scaleY, width: t.width * scaleX })),
     });
     setPages((prev) => ({ front: rescale(prev.front), back: rescale(prev.back) }));
@@ -210,6 +256,13 @@ export default function Editor({ orientation: initialOrientation, initialPages, 
         {!readOnly && (
           <aside className="side-col">
             <IconLibrary onAddIcon={handleAddIcon} />
+            <LayerPanel
+              icons={activePage.icons}
+              texts={activePage.texts}
+              selected={selected}
+              onSelect={setSelected}
+              onMove={moveLayer}
+            />
           </aside>
         )}
         <section className="center-col">

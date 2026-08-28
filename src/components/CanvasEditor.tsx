@@ -397,7 +397,8 @@ export default function CanvasEditor({
         }}
       >
         <Layer>
-          <Rect x={0} y={0} width={width} height={height} {...gradientProps} />
+          {/* listening={false}: 배경이 클릭을 먹으면 카드 빈 공간을 눌러도 선택이 안 풀린다 */}
+          <Rect x={0} y={0} width={width} height={height} listening={false} {...gradientProps} />
           {layered.map((item) => {
             if (item.kind === 'icon') {
               if (item.data.uid === croppingUid) return null;
