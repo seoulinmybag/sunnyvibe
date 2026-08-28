@@ -14,7 +14,7 @@ interface OrderDetail {
 const SIDE_LABEL: Record<Side, string> = { front: '앞면', back: '뒷면' };
 
 /** These read better as a box than a single line. */
-const MULTILINE_FIELDS = new Set(['message', 'account']);
+const MULTILINE_FIELDS = new Set(['message', 'account', 'account-groom', 'account-bride', 'qr-guide']);
 
 export default function AdminOrderText() {
   const { id } = useParams<{ id: string }>();

@@ -30,41 +30,53 @@ const FRONT: Record<Orientation, {
 };
 
 /**
- * 뒷면(2단 접지형은 내지 우측)에는 공통으로 인사말이 들어가고,
- * 계좌/약도/QR이 그 아래를 나눠 쓴 뒤 맨 아래에 날짜·장소가 온다.
+ * 뒷면(2단 접지형은 내지 우측)은 레퍼런스 순서를 따른다:
+ * 인사말 → 날짜 → 장소 → 좌/우 혼주+이름 → 좌/우 계좌 → 우하단 QR + 좌하단 안내문구.
+ * 약도가 있으면 그 위쪽 블록들이 통째로 올라가고 약도가 가운데 밴드를 차지한다.
  */
 const BACK: Record<Orientation, {
   greetingY: number;
   greetingSize: number;
-  familyParentsY: number;
-  familyParentsSize: number;
-  familyNameY: number;
-  familyNameSize: number;
-  optionsTop: number;
-  /** 혼주 블록이 들어가면 옵션 스택이 그만큼 아래에서 시작한다. */
-  optionsTopWithFamily: number;
-  optionsBottom: number;
   dateY: number;
   dateSize: number;
   venueY: number;
   venueSize: number;
+  familyParentsY: number;
+  familyParentsSize: number;
+  familyNameY: number;
+  familyNameSize: number;
+  accountY: number;
+  accountSize: number;
+  /** 약도가 있을 때의 대체 위치 — 위 블록을 올리고 가운데를 약도에 내준다. */
+  withMap: { dateY: number; venueY: number; familyParentsY: number; familyNameY: number; accountY: number; mapTop: number; mapBottom: number };
+  /** QR은 밴드에 끼우지 않고 우하단에 고정한다 (레퍼런스의 검은 네모 자리). */
+  qrSize: number;
+  qrMarginX: number;
+  qrMarginY: number;
+  qrGuideY: number;
+  qrGuideSize: number;
 }> = {
   landscape: {
-    greetingY: 0.08, greetingSize: 16,
-    familyParentsY: 0.25, familyParentsSize: 12, familyNameY: 0.3, familyNameSize: 19,
-    optionsTop: 0.26, optionsTopWithFamily: 0.42, optionsBottom: 0.78,
-    dateY: 0.84, dateSize: 18, venueY: 0.905, venueSize: 16,
+    greetingY: 0.07, greetingSize: 15,
+    dateY: 0.4, dateSize: 17, venueY: 0.455, venueSize: 15,
+    familyParentsY: 0.55, familyParentsSize: 12, familyNameY: 0.6, familyNameSize: 19,
+    accountY: 0.755, accountSize: 11,
+    withMap: { dateY: 0.31, venueY: 0.365, familyParentsY: 0.44, familyNameY: 0.485, accountY: 0.78, mapTop: 0.6, mapBottom: 0.76 },
+    qrSize: 0.075, qrMarginX: 0.038, qrMarginY: 0.036, qrGuideY: 0.885, qrGuideSize: 9,
   },
   portrait: {
     greetingY: 0.1, greetingSize: 16,
-    familyParentsY: 0.3, familyParentsSize: 13, familyNameY: 0.345, familyNameSize: 21,
-    optionsTop: 0.3, optionsTopWithFamily: 0.46, optionsBottom: 0.8,
-    dateY: 0.855, dateSize: 18, venueY: 0.91, venueSize: 16,
+    dateY: 0.5, dateSize: 17, venueY: 0.545, venueSize: 16,
+    familyParentsY: 0.645, familyParentsSize: 13, familyNameY: 0.69, familyNameSize: 21,
+    accountY: 0.8, accountSize: 12,
+    withMap: { dateY: 0.38, venueY: 0.425, familyParentsY: 0.5, familyNameY: 0.545, accountY: 0.815, mapTop: 0.61, mapBottom: 0.79 },
+    qrSize: 0.115, qrMarginX: 0.045, qrMarginY: 0.032, qrGuideY: 0.918, qrGuideSize: 10,
   },
 };
 
-/** 옵션(계좌/약도/QR)이 하나도 없을 때 날짜·장소를 끌어올려 아래가 텅 비지 않게 한다. */
-const BACK_NO_OPTIONS = { dateY: 0.56, venueY: 0.625 };
+/** 계좌 칸 머리말과 QR 안내문구 — 레퍼런스 문구 그대로. */
+const ACCOUNT_HEADING = '마음 전하실 곳';
+const QR_GUIDE = '모바일 청첩장을 확인해 보세요.\nQR CODE를 카메라 렌즈에 비춰주시면 됩니다.';
 
 /** 고인 표시: 한자 '故' 또는 국화꽃. 인쇄 문제가 없도록 이모지가 아닌 일반 글리프를 쓴다. */
 export const DECEASED_MARKS = { hanja: '故', flower: '✿' } as const;
@@ -99,7 +111,9 @@ export interface LayoutOptions {
   mapSize: ImageSize | null;
   qrUrl: string | null;
   qrSize: ImageSize | null;
-  accountText: string | null;
+  /** 레퍼런스처럼 좌/우 두 칸으로 나뉜다. 빈 쪽은 그대로 빈 슬롯으로 남는다. */
+  accountGroom: string;
+  accountBride: string;
   /** 뒷면 혼주 블록용. 이름이 하나도 없으면 블록 자체가 생략된다. */
   groom: FamilyInfo;
   bride: FamilyInfo;
@@ -228,8 +242,17 @@ function makeFamilyBlock(
   ]);
 }
 
-function makeAccountText(text: string | null, box: Box, zIndex: number): TextField {
-  return makeText('account', '계좌정보', text ?? '', { x: box.x, y: box.y + box.height * 0.15, width: box.width }, 16, zIndex);
+/** '마음 전하실 곳' 머리말을 붙인 계좌 칸. 고객이 지우거나 고칠 수 있게 본문의 첫 줄로 넣는다. */
+function makeAccountText(
+  id: 'account-groom' | 'account-bride',
+  label: string,
+  body: string,
+  box: Pick<Box, 'x' | 'y' | 'width'>,
+  fontSize: number,
+  zIndex: number,
+): TextField {
+  const text = body.trim() ? `${ACCOUNT_HEADING}\n${body.trim()}` : '';
+  return makeText(id, label, text, box, fontSize, zIndex);
 }
 
 function buildFrontPage(opts: LayoutOptions): PageState {
@@ -269,7 +292,11 @@ function buildFrontPage(opts: LayoutOptions): PageState {
   return { icons, texts, templateId: INITIAL_TEMPLATE.id, customColor: null };
 }
 
-/** 1단(single panel) back side: 인사말 → 계좌/약도/QR 스택 → 날짜·장소. */
+/**
+ * 1단 뒷면 — 레퍼런스 배치:
+ * 인사말 / 날짜 / 장소 / 좌·우 혼주+이름 / 좌·우 계좌 / 우하단 QR + 좌하단 안내문구.
+ * 약도가 있으면 위 블록들이 올라가고 약도가 가운데 밴드를 차지한다.
+ */
 function buildSinglePanelBack(opts: LayoutOptions): PageState {
   const spec = ORIENTATIONS[opts.orientation];
   const w = spec.displayWidth;
@@ -278,29 +305,45 @@ function buildSinglePanelBack(opts: LayoutOptions): PageState {
   const fieldWidth = w * 0.82;
   const x = (w - fieldWidth) / 2;
 
-  const enabled: Array<'account' | 'map' | 'qr'> = [];
-  if (opts.hasAccount) enabled.push('account');
-  if (opts.hasMap) enabled.push('map');
-  if (opts.hasQr) enabled.push('qr');
+  // 좌/우 두 칸은 혼주·이름·계좌가 같은 세로선을 공유한다
+  const colWidth = w * 0.39;
+  const leftX = w * 0.07;
+  const rightX = w * 0.54;
+
+  const anchors = opts.hasMap
+    ? {
+        dateY: cfg.withMap.dateY,
+        venueY: cfg.withMap.venueY,
+        familyParentsY: cfg.withMap.familyParentsY,
+        familyNameY: cfg.withMap.familyNameY,
+        accountY: cfg.withMap.accountY,
+      }
+    : {
+        dateY: cfg.dateY,
+        venueY: cfg.venueY,
+        familyParentsY: cfg.familyParentsY,
+        familyNameY: cfg.familyNameY,
+        accountY: cfg.accountY,
+      };
 
   const icons: PlacedIcon[] = [];
   const texts: TextField[] = [
     makeText('message', '인사말', opts.greeting || DEFAULT_GREETING, { x, y: h * cfg.greetingY, width: fieldWidth }, cfg.greetingSize, 1),
+    makeText('date', '날짜', opts.date, { x, y: h * anchors.dateY, width: fieldWidth }, cfg.dateSize, 2),
+    makeText('venue', '장소', opts.venue, { x, y: h * anchors.venueY, width: fieldWidth }, cfg.venueSize, 3),
   ];
+  let z = 4;
 
-  let z = 2;
-  const showFamily = hasFamilyInfo(opts);
-  if (showFamily) {
-    const colWidth = w * 0.39;
+  if (hasFamilyInfo(opts)) {
     texts.push(
       ...makeFamilyBlock(
         opts,
-        w * 0.07,
-        w * 0.54,
+        leftX,
+        rightX,
         colWidth,
-        h * cfg.familyParentsY,
+        h * anchors.familyParentsY,
         cfg.familyParentsSize,
-        h * cfg.familyNameY,
+        h * anchors.familyNameY,
         cfg.familyNameSize,
         z,
       ),
@@ -308,21 +351,46 @@ function buildSinglePanelBack(opts: LayoutOptions): PageState {
     z += 4;
   }
 
-  const optionsTop = showFamily ? cfg.optionsTopWithFamily : cfg.optionsTop;
-  if (enabled.length > 0) {
-    const bandHeight = ((cfg.optionsBottom - optionsTop) / enabled.length) * h;
-    enabled.forEach((kind, i) => {
-      const box: Box = { x, y: h * optionsTop + i * bandHeight, width: fieldWidth, height: bandHeight };
-      if (kind === 'account') texts.push(makeAccountText(opts.accountText, box, z++));
-      if (kind === 'map') icons.push(makeImageIconInBox('layout-map', opts.mapUrl!, opts.mapSize, box, z++));
-      if (kind === 'qr') icons.push(makeImageIconInBox('layout-qr', opts.qrUrl!, opts.qrSize, box, z++));
-    });
+  if (opts.hasAccount) {
+    const y = h * anchors.accountY;
+    texts.push(
+      makeAccountText('account-groom', '신랑측 계좌', opts.accountGroom, { x: leftX, y, width: colWidth }, cfg.accountSize, z++),
+      makeAccountText('account-bride', '신부측 계좌', opts.accountBride, { x: rightX, y, width: colWidth }, cfg.accountSize, z++),
+    );
   }
 
-  const dateY = enabled.length > 0 ? cfg.dateY : BACK_NO_OPTIONS.dateY;
-  const venueY = enabled.length > 0 ? cfg.venueY : BACK_NO_OPTIONS.venueY;
-  texts.push(makeText('date', '날짜', opts.date, { x, y: h * dateY, width: fieldWidth }, cfg.dateSize, z++));
-  texts.push(makeText('venue', '장소', opts.venue, { x, y: h * venueY, width: fieldWidth }, cfg.venueSize, z++));
+  if (opts.hasMap && opts.mapUrl) {
+    icons.push(
+      makeImageIconInBox(
+        'layout-map',
+        opts.mapUrl,
+        opts.mapSize,
+        { x, y: h * cfg.withMap.mapTop, width: fieldWidth, height: h * (cfg.withMap.mapBottom - cfg.withMap.mapTop) },
+        z++,
+      ),
+    );
+  }
+
+  if (opts.hasQr && opts.qrUrl) {
+    // 레퍼런스의 검은 네모 자리 — 밴드에 넣지 않고 우하단에 고정한다
+    const size = w * cfg.qrSize;
+    icons.push({
+      uid: 'layout-qr',
+      iconId: 'layout-qr',
+      src: opts.qrUrl,
+      x: w - size - w * cfg.qrMarginX,
+      y: h - size - h * cfg.qrMarginY,
+      width: size,
+      height: size,
+      rotation: 0,
+      zIndex: z++,
+    });
+    texts.push(
+      makeText('qr-guide', 'QR 안내문구', QR_GUIDE, { x: w * 0.05, y: h * cfg.qrGuideY, width: w * 0.55 }, cfg.qrGuideSize, z++, {
+        align: 'left',
+      }),
+    );
+  }
 
   return { icons, texts, templateId: INITIAL_TEMPLATE.id, customColor: null };
 }
@@ -371,7 +439,13 @@ function buildFoldBack(opts: LayoutOptions): PageState {
   const extrasBandHeight = ((0.9 - mapBottom) / Math.max(extras.length, 1)) * h;
   extras.forEach((kind, i) => {
     const box: Box = { x: leftX, y: h * mapBottom + i * extrasBandHeight, width: colWidth, height: extrasBandHeight };
-    if (kind === 'account') texts.push(makeAccountText(opts.accountText, box, z++));
+    if (kind === 'account') {
+      const half = colWidth / 2 - w * 0.005;
+      texts.push(
+        makeAccountText('account-groom', '신랑측 계좌', opts.accountGroom, { x: box.x, y: box.y, width: half }, 10, z++),
+        makeAccountText('account-bride', '신부측 계좌', opts.accountBride, { x: box.x + colWidth - half, y: box.y, width: half }, 10, z++),
+      );
+    }
     if (kind === 'qr') icons.push(makeImageIconInBox('layout-qr', opts.qrUrl!, opts.qrSize, box, z++));
   });
 

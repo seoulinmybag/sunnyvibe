@@ -89,7 +89,8 @@ export default function AdminNewOrder() {
   const [hasAccount, setHasAccount] = useState(false);
   const [hasMap, setHasMap] = useState(false);
   const [hasQr, setHasQr] = useState(false);
-  const [accountText, setAccountText] = useState('');
+  const [accountGroom, setAccountGroom] = useState('');
+  const [accountBride, setAccountBride] = useState('');
   const [customerPassword, setCustomerPassword] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
   const [map, setMap] = useState<File | null>(null);
@@ -143,7 +144,10 @@ export default function AdminNewOrder() {
     form.set('has_account', String(hasAccount));
     form.set('has_map', String(mapChecked));
     form.set('has_qr', String(hasQr));
-    if (hasAccount) form.set('account_text', accountText);
+    if (hasAccount) {
+      form.set('account_groom', accountGroom);
+      form.set('account_bride', accountBride);
+    }
     if (customerPassword.trim()) form.set('customer_password', customerPassword.trim());
     form.set('orientation', orientation);
     form.set('photo', photo);
@@ -297,10 +301,28 @@ export default function AdminNewOrder() {
         </div>
 
         {hasAccount && (
-          <label className="admin-field">
-            <span>계좌 정보 텍스트</span>
-            <textarea rows={3} value={accountText} onChange={(e) => setAccountText(e.target.value)} placeholder={'신랑측 OO은행 123-456\n신부측 OO은행 789-012'} />
-          </label>
+          <fieldset className="admin-fieldset">
+            <legend>마음 전하실 곳</legend>
+            <p className="admin-hint">'마음 전하실 곳' 머리말은 자동으로 붙습니다. 계좌만 적어주세요.</p>
+            <label className="admin-field">
+              <span>신랑측</span>
+              <textarea
+                rows={3}
+                value={accountGroom}
+                onChange={(e) => setAccountGroom(e.target.value)}
+                placeholder={'신랑측 혼주: (농협) 000-00-000000\n신랑: (농협) 000-00-000000'}
+              />
+            </label>
+            <label className="admin-field">
+              <span>신부측</span>
+              <textarea
+                rows={3}
+                value={accountBride}
+                onChange={(e) => setAccountBride(e.target.value)}
+                placeholder={'신부측 혼주: (대구은행) 000-00-000000\n신부: (대구은행) 000-00-000000'}
+              />
+            </label>
+          </fieldset>
         )}
 
         {mapChecked && (

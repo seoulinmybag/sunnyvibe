@@ -24,7 +24,8 @@ function makeSamplePages(orientation: Orientation, photo: string | null): Record
     mapSize: null,
     qrUrl: null,
     qrSize: null,
-    accountText: null,
+    accountGroom: '',
+    accountBride: '',
     groom: {
       name: '김철수',
       father: { name: '김영수', deceased: false },
