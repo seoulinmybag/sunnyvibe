@@ -1,4 +1,5 @@
 import { FONT_GROUPS } from '../data/fonts';
+import { useState } from 'react';
 import type { SelectedElement, TextField } from '../types';
 
 interface Props {
@@ -6,6 +7,8 @@ interface Props {
   selected: SelectedElement;
   onChange: (id: string, attrs: Partial<TextField>) => void;
   onSelect: (sel: SelectedElement) => void;
+  /** Adds a free text element — the fixed slots can't cover things like an address or a phone number. */
+  onAddText: (text: string) => void;
 }
 
 const CAPTION_BG_DEFAULT = '#141414';
@@ -18,9 +21,17 @@ function luminance(hex: string): number {
   return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
 }
 
-export default function TextFieldsPanel({ texts, selected, onChange, onSelect }: Props) {
+export default function TextFieldsPanel({ texts, selected, onChange, onSelect, onAddText }: Props) {
+  const [draft, setDraft] = useState('');
   const selectedField =
     selected?.type === 'text' ? texts.find((t) => t.id === selected.id) : undefined;
+
+  function submitDraft() {
+    const text = draft.trim();
+    if (!text) return;
+    onAddText(text);
+    setDraft('');
+  }
 
   return (
     <div className="panel">
@@ -37,6 +48,24 @@ export default function TextFieldsPanel({ texts, selected, onChange, onSelect }:
             />
           </label>
         ))}
+      </div>
+
+      <div className="add-text-row">
+        <span className="text-field-label">텍스트 추가</span>
+        <div className="add-text-controls">
+          <input
+            type="text"
+            value={draft}
+            placeholder="주소, 연락처 등"
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') submitDraft();
+            }}
+          />
+          <button type="button" disabled={!draft.trim()} onClick={submitDraft}>
+            입력하기
+          </button>
+        </div>
       </div>
 
       {selectedField && (

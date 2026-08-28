@@ -141,6 +141,27 @@ export default function Editor({
     img.src = dataUrl;
   }
 
+  /** Free text the customer adds themselves — unlike the generated slots, these can be removed. */
+  function handleAddText(text: string) {
+    const id = `custom-${++uidCounter}`;
+    const width = spec.displayWidth * 0.7;
+    const field: TextField = {
+      id,
+      label: '추가 문구',
+      x: (spec.displayWidth - width) / 2,
+      y: spec.displayHeight / 2,
+      width,
+      text,
+      fontSize: 16,
+      fontFamily: "'Noto Serif KR', serif",
+      fill: template.textColorDefault,
+      align: 'center',
+      zIndex: ++zCounter.current,
+    };
+    updateActivePage((p) => ({ ...p, texts: [...p.texts, field] }));
+    setSelected({ type: 'text', id });
+  }
+
   function handleIconChange(uid: string, attrs: Partial<PlacedIcon>) {
     updateActivePage((p) => ({ ...p, icons: p.icons.map((i) => (i.uid === uid ? { ...i, ...attrs } : i)) }));
   }
@@ -154,8 +175,11 @@ export default function Editor({
     if (selected.type === 'icon') {
       updateActivePage((p) => ({ ...p, icons: p.icons.filter((i) => i.uid !== selected.uid) }));
       setSelected(null);
+    } else if (selected.id.startsWith('custom-')) {
+      updateActivePage((p) => ({ ...p, texts: p.texts.filter((t) => t.id !== selected.id) }));
+      setSelected(null);
     } else {
-      // text fields are fixed slots; clear content instead of removing the field
+      // generated slots are part of the layout; clear the content instead of removing the field
       handleTextChange(selected.id, { text: '' });
     }
   }
@@ -307,7 +331,13 @@ export default function Editor({
               onChange={handleTemplateChange}
               onCustomColor={handleCustomColor}
             />
-            <TextFieldsPanel texts={activePage.texts} selected={selected} onChange={handleTextChange} onSelect={setSelected} />
+            <TextFieldsPanel
+              texts={activePage.texts}
+              selected={selected}
+              onChange={handleTextChange}
+              onSelect={setSelected}
+              onAddText={handleAddText}
+            />
           </aside>
         )}
       </main>

@@ -30,53 +30,93 @@ const FRONT: Record<Orientation, {
 };
 
 /**
- * 뒷면(2단 접지형은 내지 우측)은 레퍼런스 순서를 따른다:
- * 인사말 → 날짜 → 장소 → 좌/우 혼주+이름 → 좌/우 계좌 → 우하단 QR + 좌하단 안내문구.
- * 약도가 있으면 그 위쪽 블록들이 통째로 올라가고 약도가 가운데 밴드를 차지한다.
+ * 뒷면 세로 배치는 레퍼런스 네 가지를 그대로 따른다. 공통 순서는
+ * 인사말 → 좌·우 혼주+이름 → (계좌) → 날짜·장소이고, 날짜·장소는 원래 맨 아래에 온다.
+ * 다만 QR과 계좌가 함께 붙어 아래가 꽉 차면 날짜·장소가 인사말 바로 밑으로 올라간다.
  */
-const BACK: Record<Orientation, {
+interface BackAnchors {
   greetingY: number;
-  greetingSize: number;
-  dateY: number;
-  dateSize: number;
-  venueY: number;
-  venueSize: number;
   familyParentsY: number;
-  familyParentsSize: number;
   familyNameY: number;
-  familyNameSize: number;
   accountY: number;
+  dateY: number;
+  venueY: number;
+  mapTop: number;
+  mapBottom: number;
+}
+
+const BACK: Record<Orientation, {
+  greetingSize: number;
+  dateSize: number;
+  venueSize: number;
+  familyParentsSize: number;
+  familyNameSize: number;
   accountSize: number;
-  /** 약도가 있을 때의 대체 위치 — 위 블록을 올리고 가운데를 약도에 내준다. */
-  withMap: { dateY: number; venueY: number; familyParentsY: number; familyNameY: number; accountY: number; mapTop: number; mapBottom: number };
-  /** QR은 밴드에 끼우지 않고 우하단에 고정한다 (레퍼런스의 검은 네모 자리). */
-  qrSize: number;
+  /** QR은 밴드에 끼우지 않고 우하단에 고정한다 (레퍼런스의 검은 네모 자리). 크기는 QR_PRINT_MM. */
   qrMarginX: number;
   qrMarginY: number;
   qrGuideY: number;
   qrGuideSize: number;
+  modes: {
+    /** 옵션 없음 */
+    plain: BackAnchors;
+    /** QR만 — 날짜·장소가 QR 줄 바로 위 */
+    qrOnly: BackAnchors;
+    /** 계좌만 — 계좌 아래에 날짜·장소 */
+    accountOnly: BackAnchors;
+    /** QR+계좌 — 아래가 차서 날짜·장소가 위로 */
+    qrAccount: BackAnchors;
+    /** 약도 있음 (QR 없음) */
+    map: BackAnchors;
+    /** 약도 + QR — 날짜·장소가 위로 */
+    mapQr: BackAnchors;
+  };
 }> = {
   landscape: {
-    greetingY: 0.07, greetingSize: 15,
-    dateY: 0.4, dateSize: 17, venueY: 0.455, venueSize: 15,
-    familyParentsY: 0.55, familyParentsSize: 12, familyNameY: 0.6, familyNameSize: 19,
-    accountY: 0.755, accountSize: 11,
-    withMap: { dateY: 0.31, venueY: 0.365, familyParentsY: 0.44, familyNameY: 0.485, accountY: 0.78, mapTop: 0.6, mapBottom: 0.76 },
-    qrSize: 0.075, qrMarginX: 0.038, qrMarginY: 0.036, qrGuideY: 0.885, qrGuideSize: 9,
+    greetingSize: 15,
+    dateSize: 17, venueSize: 15,
+    familyParentsSize: 12, familyNameSize: 19,
+    accountSize: 11,
+    qrMarginX: 0.038, qrMarginY: 0.036, qrGuideY: 0.885, qrGuideSize: 9,
+    modes: {
+      plain: { greetingY: 0.07, familyParentsY: 0.48, familyNameY: 0.535, accountY: 0.65, dateY: 0.8, venueY: 0.875, mapTop: 0, mapBottom: 0 },
+      qrOnly: { greetingY: 0.07, familyParentsY: 0.46, familyNameY: 0.515, accountY: 0.65, dateY: 0.72, venueY: 0.785, mapTop: 0, mapBottom: 0 },
+      accountOnly: { greetingY: 0.07, familyParentsY: 0.44, familyNameY: 0.495, accountY: 0.65, dateY: 0.82, venueY: 0.89, mapTop: 0, mapBottom: 0 },
+      qrAccount: { greetingY: 0.07, familyParentsY: 0.55, familyNameY: 0.6, accountY: 0.73, dateY: 0.4, venueY: 0.455, mapTop: 0, mapBottom: 0 },
+      map: { greetingY: 0.06, familyParentsY: 0.28, familyNameY: 0.335, accountY: 0.74, dateY: 0.82, venueY: 0.89, mapTop: 0.4, mapBottom: 0.76 },
+      mapQr: { greetingY: 0.06, familyParentsY: 0.26, familyNameY: 0.315, accountY: 0.72, dateY: 0.71, venueY: 0.755, mapTop: 0.38, mapBottom: 0.68 },
+    },
   },
   portrait: {
-    greetingY: 0.1, greetingSize: 16,
-    dateY: 0.5, dateSize: 17, venueY: 0.545, venueSize: 16,
-    familyParentsY: 0.645, familyParentsSize: 13, familyNameY: 0.69, familyNameSize: 21,
-    accountY: 0.8, accountSize: 12,
-    withMap: { dateY: 0.38, venueY: 0.425, familyParentsY: 0.5, familyNameY: 0.545, accountY: 0.815, mapTop: 0.61, mapBottom: 0.79 },
-    qrSize: 0.115, qrMarginX: 0.045, qrMarginY: 0.032, qrGuideY: 0.918, qrGuideSize: 10,
+    greetingSize: 16,
+    dateSize: 17, venueSize: 16,
+    familyParentsSize: 13, familyNameSize: 21,
+    accountSize: 12,
+    qrMarginX: 0.045, qrMarginY: 0.032, qrGuideY: 0.918, qrGuideSize: 10,
+    modes: {
+      plain: { greetingY: 0.1, familyParentsY: 0.6, familyNameY: 0.65, accountY: 0.73, dateY: 0.87, venueY: 0.92, mapTop: 0, mapBottom: 0 },
+      qrOnly: { greetingY: 0.1, familyParentsY: 0.605, familyNameY: 0.655, accountY: 0.73, dateY: 0.8, venueY: 0.835, mapTop: 0, mapBottom: 0 },
+      accountOnly: { greetingY: 0.1, familyParentsY: 0.605, familyNameY: 0.655, accountY: 0.73, dateY: 0.88, venueY: 0.915, mapTop: 0, mapBottom: 0 },
+      qrAccount: { greetingY: 0.1, familyParentsY: 0.645, familyNameY: 0.69, accountY: 0.8, dateY: 0.5, venueY: 0.545, mapTop: 0, mapBottom: 0 },
+      map: { greetingY: 0.085, familyParentsY: 0.33, familyNameY: 0.375, accountY: 0.8, dateY: 0.87, venueY: 0.915, mapTop: 0.43, mapBottom: 0.82 },
+      mapQr: { greetingY: 0.085, familyParentsY: 0.3, familyNameY: 0.345, accountY: 0.76, dateY: 0.79, venueY: 0.823, mapTop: 0.4, mapBottom: 0.72 },
+    },
   },
 };
+
+function backAnchors(orientation: Orientation, opts: LayoutOptions): BackAnchors {
+  const { modes } = BACK[orientation];
+  if (opts.hasMap) return opts.hasQr ? modes.mapQr : modes.map;
+  if (opts.hasQr) return opts.hasAccount ? modes.qrAccount : modes.qrOnly;
+  if (opts.hasAccount) return modes.accountOnly;
+  return modes.plain;
+}
 
 /** 계좌 칸 머리말과 QR 안내문구 — 레퍼런스 문구 그대로. */
 const ACCOUNT_HEADING = '마음 전하실 곳';
 const QR_GUIDE = '모바일 청첩장을 확인해 보세요.\nQR CODE를 카메라 렌즈에 비춰주시면 됩니다.';
+/** 인쇄 시 실제 변 길이(mm). QR 스캔 권장 최소치가 15mm 안팎이라 그보다 작아지지 않게 둔다. */
+const QR_PRINT_MM = 14;
 
 /** 고인 표시: 한자 '故' 또는 국화꽃. 인쇄 문제가 없도록 이모지가 아닌 일반 글리프를 쓴다. */
 export const DECEASED_MARKS = { hanja: '故', flower: '✿' } as const;
@@ -310,25 +350,11 @@ function buildSinglePanelBack(opts: LayoutOptions): PageState {
   const leftX = w * 0.07;
   const rightX = w * 0.54;
 
-  const anchors = opts.hasMap
-    ? {
-        dateY: cfg.withMap.dateY,
-        venueY: cfg.withMap.venueY,
-        familyParentsY: cfg.withMap.familyParentsY,
-        familyNameY: cfg.withMap.familyNameY,
-        accountY: cfg.withMap.accountY,
-      }
-    : {
-        dateY: cfg.dateY,
-        venueY: cfg.venueY,
-        familyParentsY: cfg.familyParentsY,
-        familyNameY: cfg.familyNameY,
-        accountY: cfg.accountY,
-      };
+  const anchors = backAnchors(opts.orientation, opts);
 
   const icons: PlacedIcon[] = [];
   const texts: TextField[] = [
-    makeText('message', '인사말', opts.greeting || DEFAULT_GREETING, { x, y: h * cfg.greetingY, width: fieldWidth }, cfg.greetingSize, 1),
+    makeText('message', '인사말', opts.greeting || DEFAULT_GREETING, { x, y: h * anchors.greetingY, width: fieldWidth }, cfg.greetingSize, 1),
     makeText('date', '날짜', opts.date, { x, y: h * anchors.dateY, width: fieldWidth }, cfg.dateSize, 2),
     makeText('venue', '장소', opts.venue, { x, y: h * anchors.venueY, width: fieldWidth }, cfg.venueSize, 3),
   ];
@@ -365,15 +391,16 @@ function buildSinglePanelBack(opts: LayoutOptions): PageState {
         'layout-map',
         opts.mapUrl,
         opts.mapSize,
-        { x, y: h * cfg.withMap.mapTop, width: fieldWidth, height: h * (cfg.withMap.mapBottom - cfg.withMap.mapTop) },
+        { x, y: h * anchors.mapTop, width: fieldWidth, height: h * (anchors.mapBottom - anchors.mapTop) },
         z++,
       ),
     );
   }
 
   if (opts.hasQr && opts.qrUrl) {
-    // 레퍼런스의 검은 네모 자리 — 밴드에 넣지 않고 우하단에 고정한다
-    const size = w * cfg.qrSize;
+    // 레퍼런스의 검은 네모 자리 — 밴드에 넣지 않고 우하단에 고정한다.
+    // 화면 좌표가 아니라 인쇄 mm 기준으로 잡아야 실제 출력에서 스캔되는 크기가 나온다.
+    const size = (QR_PRINT_MM / spec.printWidthMm) * w;
     icons.push({
       uid: 'layout-qr',
       iconId: 'layout-qr',
