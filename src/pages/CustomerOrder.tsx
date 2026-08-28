@@ -21,6 +21,9 @@ const SAVE_STATE_LABEL: Record<SaveState, string> = {
   error: '저장 실패 — 인터넷 연결을 확인해주세요',
 };
 
+/** Autosave waits this long after the last edit before writing. */
+const AUTOSAVE_DELAY = 1200;
+
 export default function CustomerOrder() {
   const { id } = useParams<{ id: string }>();
   const [checking, setChecking] = useState(true);
@@ -30,8 +33,13 @@ export default function CustomerOrder() {
   const [submitting, setSubmitting] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>('idle');
 
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+
   const orderRef = useRef<{ id: string; status: OrderData['status'] } | null>(null);
   const saveTimeoutRef = useRef<number | null>(null);
+  /** Latest design, so 임시저장 and the leave-the-page flush can write without waiting for a render. */
+  const pagesRef = useRef<Record<Side, PageState> | null>(null);
+  const dirtyRef = useRef(false);
 
   useEffect(() => {
     if (!id) return;
@@ -47,35 +55,67 @@ export default function CustomerOrder() {
       .finally(() => setChecking(false));
   }, [id]);
 
-  const handlePagesChange = useCallback((pages: Record<Side, PageState>) => {
+  const savePages = useCallback(async () => {
     const current = orderRef.current;
-    if (!current || current.status === 'confirmed') return;
+    const pages = pagesRef.current;
+    if (!current || current.status === 'confirmed' || !pages) return;
     if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = window.setTimeout(() => {
-      setSaveState('saving');
-      fetch(`/api/orders/autosave?id=${encodeURIComponent(current.id)}`, {
+    setSaveState('saving');
+    try {
+      const res = await fetch(`/api/orders/autosave?id=${encodeURIComponent(current.id)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ pages }),
-      })
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.ok) {
-            if (orderRef.current) orderRef.current.status = data.status;
-            setSaveState('saved');
-          } else {
-            setSaveState('error');
-          }
-        })
-        .catch(() => setSaveState('error'));
-    }, 1200);
+      });
+      const data = await res.json();
+      if (data.ok) {
+        if (orderRef.current) orderRef.current.status = data.status;
+        dirtyRef.current = false;
+        setSavedAt(new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }));
+        setSaveState('saved');
+      } else {
+        setSaveState('error');
+      }
+    } catch {
+      setSaveState('error');
+    }
   }, []);
+
+  const handlePagesChange = useCallback(
+    (pages: Record<Side, PageState>) => {
+      const current = orderRef.current;
+      if (!current || current.status === 'confirmed') return;
+      pagesRef.current = pages;
+      dirtyRef.current = true;
+      if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = window.setTimeout(() => void savePages(), AUTOSAVE_DELAY);
+    },
+    [savePages],
+  );
+
+  // Leaving with an edit still inside the debounce window would drop it, so flush when the tab
+  // goes away, and fall back to the browser's own prompt if the write can't finish in time.
+  useEffect(() => {
+    function flushOnHide() {
+      if (document.visibilityState === 'hidden' && dirtyRef.current) void savePages();
+    }
+    function warnIfUnsaved(e: BeforeUnloadEvent) {
+      if (dirtyRef.current) e.preventDefault();
+    }
+    document.addEventListener('visibilitychange', flushOnHide);
+    window.addEventListener('beforeunload', warnIfUnsaved);
+    return () => {
+      document.removeEventListener('visibilitychange', flushOnHide);
+      window.removeEventListener('beforeunload', warnIfUnsaved);
+    };
+  }, [savePages]);
 
   const handleConfirm = useCallback(async (payload: ConfirmPayload) => {
     const current = orderRef.current;
     if (!current) return;
     if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current);
+    dirtyRef.current = false;
     const res = await fetch(`/api/orders/confirm?id=${encodeURIComponent(current.id)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -146,7 +186,12 @@ export default function CustomerOrder() {
 
   return (
     <div style={{ position: 'relative' }}>
-      {!readOnly && saveState !== 'idle' && <div className="save-status-badge">{SAVE_STATE_LABEL[saveState]}</div>}
+      {!readOnly && saveState !== 'idle' && (
+        <div className="save-status-badge">
+          {SAVE_STATE_LABEL[saveState]}
+          {saveState === 'saved' && savedAt && ` · ${savedAt}`}
+        </div>
+      )}
       <Editor
         orientation={order.orientation}
         initialPages={order.pages}
@@ -154,6 +199,8 @@ export default function CustomerOrder() {
         readOnly={readOnly}
         onPagesChange={handlePagesChange}
         onConfirm={handleConfirm}
+        onSaveNow={savePages}
+        saving={saveState === 'saving'}
       />
     </div>
   );

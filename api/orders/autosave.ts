@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireOrderAccess } from '../_auth.js';
+import { requireAdmin, requireOrderAccess } from '../_auth.js';
 import { getSupabaseAdmin } from '../_supabaseAdmin.js';
+import { normalizePagesForStorage } from '../_storageUrls.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'PUT') {
@@ -9,7 +10,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const orderId = typeof req.query.id === 'string' ? req.query.id : '';
-  if (!orderId || !requireOrderAccess(req, orderId)) {
+  // the customer edits from /order/:id, the admin from the 주문서 screen — same write
+  if (!orderId || !(requireOrderAccess(req, orderId) || requireAdmin(req))) {
     res.status(401).json({ ok: false, error: 'unauthorized' });
     return;
   }
@@ -37,7 +39,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { error } = await admin
     .from('orders')
-    .update({ pages, status: nextStatus, updated_at: new Date().toISOString() })
+    .update({ pages: normalizePagesForStorage(pages), status: nextStatus, updated_at: new Date().toISOString() })
     .eq('id', orderId);
   if (error) {
     res.status(500).json({ ok: false, error: error.message });

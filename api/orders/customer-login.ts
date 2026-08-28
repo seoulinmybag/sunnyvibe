@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { serializeCookie, signToken } from '../_cookies.js';
 import { ORDER_COOKIE, getCookieSecret } from '../_auth.js';
 import { getSupabaseAdmin } from '../_supabaseAdmin.js';
+import { resolvePagesForClient } from '../_storageUrls.js';
 
 const THIRTY_DAYS = 60 * 60 * 24 * 30;
 
@@ -44,7 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       id: order.id,
       customerName: order.customer_name,
       orientation: order.orientation,
-      pages: order.pages,
+      pages: await resolvePagesForClient(order.pages),
       status: order.status,
     },
   });

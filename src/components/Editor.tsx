@@ -37,6 +37,10 @@ interface EditorProps {
   onPagesChange?: (pages: Record<Side, PageState>) => void;
   /** when provided, "시안 확정하기" hands the generated files here instead of just saving a local PDF. */
   onConfirm?: (payload: ConfirmPayload) => Promise<void>;
+  /** when provided, the toolbar offers 임시저장 to flush the pending autosave. */
+  onSaveNow?: () => Promise<void>;
+  /** true while an autosave request is in flight. */
+  saving?: boolean;
 }
 
 let uidCounter = 0;
@@ -51,7 +55,15 @@ function maxZIndex(pages: Record<Side, PageState>): number {
   return max;
 }
 
-export default function Editor({ orientation: initialOrientation, initialPages, readOnly = false, onPagesChange, onConfirm }: EditorProps) {
+export default function Editor({
+  orientation: initialOrientation,
+  initialPages,
+  readOnly = false,
+  onPagesChange,
+  onConfirm,
+  onSaveNow,
+  saving,
+}: EditorProps) {
   const [orientation, setOrientation] = useState<Orientation>(initialOrientation);
   const spec = ORIENTATIONS[orientation];
 
@@ -251,6 +263,8 @@ export default function Editor({ orientation: initialOrientation, initialPages, 
         pages={pages}
         resolveTemplate={resolveTemplate}
         onConfirm={onConfirm}
+        onSaveNow={onSaveNow}
+        saving={saving}
       />
       <main className={readOnly ? 'app-main app-main-readonly' : 'app-main'}>
         {!readOnly && (
@@ -277,6 +291,7 @@ export default function Editor({ orientation: initialOrientation, initialPages, 
             onIconChange={handleIconChange}
             onTextChange={handleTextChange}
             onDelete={handleDelete}
+            onMoveLayer={(move) => selected && moveLayer(selected, move)}
             stageRef={stageRef}
             interactive={!readOnly}
           />

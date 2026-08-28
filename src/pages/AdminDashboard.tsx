@@ -134,6 +134,9 @@ export default function AdminDashboard() {
                         <button type="button" onClick={() => copyLink(o.id)}>
                           {copiedId === o.id ? '복사됨!' : '링크 복사'}
                         </button>
+                        <Link to={`/admin/order/${o.id}`} className="admin-link-btn admin-table-link">
+                          주문서 보기
+                        </Link>
                         <button type="button" onClick={() => toggleDetail(o.id)}>
                           {isExpanded ? '닫기' : '상세보기'}
                         </button>

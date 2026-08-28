@@ -18,6 +18,8 @@ interface Props {
   onIconChange: (uid: string, attrs: Partial<PlacedIcon>) => void;
   onTextChange: (id: string, attrs: Partial<TextField>) => void;
   onDelete: () => void;
+  /** Moves the selected element one place forward/backward in the shared z-order. */
+  onMoveLayer: (move: 'forward' | 'backward') => void;
   stageRef: React.RefObject<Konva.Stage | null>;
   /** false = view-only (confirmed orders): no drag/select/edit affordances at all. */
   interactive?: boolean;
@@ -288,6 +290,7 @@ export default function CanvasEditor({
   onIconChange,
   onTextChange,
   onDelete,
+  onMoveLayer,
   stageRef,
   interactive = true,
 }: Props) {
@@ -517,6 +520,12 @@ export default function CanvasEditor({
               ⤢
             </button>
           )}
+          <button className="selection-layer-btn" title="앞으로 가져오기" onClick={() => onMoveLayer('forward')}>
+            ▲
+          </button>
+          <button className="selection-layer-btn" title="뒤로 보내기" onClick={() => onMoveLayer('backward')}>
+            ▼
+          </button>
           <button className="selection-delete-btn" title="삭제" onClick={onDelete}>
             ×
           </button>

@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { requireAdmin } from '../_auth.js';
 import { getSupabaseAdmin } from '../_supabaseAdmin.js';
+import { resolvePagesForClient } from '../_storageUrls.js';
 
 const SIGNED_URL_TTL = 60 * 60; // 1 hour
 
@@ -48,6 +49,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       id: order.id,
       customerName: order.customer_name,
       panelType: order.panel_type,
+      orientation: order.orientation,
+      // the 주문서 screen edits these text fields in place, so they round-trip through here
+      pages: await resolvePagesForClient(order.pages),
       status: order.status,
       createdAt: order.created_at,
       confirmedAt: order.confirmed_at,

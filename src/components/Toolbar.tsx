@@ -27,6 +27,10 @@ interface Props {
   resolveTemplate?: (page: PageState) => Template;
   /** when provided, "시안 확정하기" hands the generated files here instead of just saving a local PDF. */
   onConfirm?: (payload: ConfirmPayload) => Promise<void>;
+  /** when provided, shows 임시저장 — flushes the pending autosave right away. */
+  onSaveNow?: () => Promise<void>;
+  /** true while an autosave request is in flight. */
+  saving?: boolean;
 }
 
 function downloadDataUri(uri: string, filename: string) {
@@ -52,6 +56,8 @@ export default function Toolbar({
   pages,
   resolveTemplate,
   onConfirm,
+  onSaveNow,
+  saving = false,
 }: Props) {
   const spec = ORIENTATIONS[orientation];
   const [confirming, setConfirming] = useState(false);
@@ -185,6 +191,11 @@ export default function Toolbar({
         )}
       </div>
       <div className="toolbar-group">
+        {!readOnly && onSaveNow && (
+          <button disabled={saving} onClick={() => void onSaveNow()}>
+            {saving ? '저장 중...' : '임시저장'}
+          </button>
+        )}
         <button disabled={previewing} onClick={handlePreview}>
           {previewing ? '만드는 중...' : '시안 미리보기'}
         </button>

@@ -412,3 +412,8 @@ code {
   color: var(--text);
   cursor: pointer;
 }
+
+.admin-table-link {
+  font-size: 13px;
+  padding: 6px 10px;
+}

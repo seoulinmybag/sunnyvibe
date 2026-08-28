@@ -7,6 +7,7 @@ import type { File as FormidableFile } from 'formidable';
 import { requireAdmin } from '../_auth.js';
 import { parseForm } from '../_parseForm.js';
 import { getSupabaseAdmin } from '../_supabaseAdmin.js';
+import { normalizePagesForStorage } from '../_storageUrls.js';
 import { buildInitialPages } from '../../src/lib/layoutGenerator.js';
 import type { DeceasedStyle, FamilyInfo, ImageSize, LayoutOptions } from '../../src/lib/layoutGenerator.js';
 
@@ -159,7 +160,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       venue: fields.venue || '',
       greeting: fields.greeting || '',
     };
-    const pages = buildInitialPages(layoutOptions);
+    // the generator needs loadable URLs, but what gets stored has to outlive them
+    const pages = normalizePagesForStorage(buildInitialPages(layoutOptions));
 
     const rawPassword = fields.customer_password?.trim() || randomDigits(4);
     const passwordHash = await bcrypt.hash(rawPassword, 10);

@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { requireOrderAccess } from '../_auth.js';
 import { getSupabaseAdmin } from '../_supabaseAdmin.js';
+import { resolvePagesForClient } from '../_storageUrls.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const orderId = typeof req.query.id === 'string' ? req.query.id : '';
@@ -26,7 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       id: order.id,
       customerName: order.customer_name,
       orientation: order.orientation,
-      pages: order.pages,
+      pages: await resolvePagesForClient(order.pages),
       status: order.status,
     },
   });

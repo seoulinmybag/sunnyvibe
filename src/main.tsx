@@ -6,6 +6,7 @@ import App from './App.tsx'
 import AdminLogin from './pages/AdminLogin.tsx'
 import AdminDashboard from './pages/AdminDashboard.tsx'
 import AdminNewOrder from './pages/AdminNewOrder.tsx'
+import AdminOrderText from './pages/AdminOrderText.tsx'
 import CustomerOrder from './pages/CustomerOrder.tsx'
 
 createRoot(document.getElementById('root')!).render(
@@ -16,6 +17,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/admin" element={<AdminLogin />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/new" element={<AdminNewOrder />} />
+        <Route path="/admin/order/:id" element={<AdminOrderText />} />
         <Route path="/order/:id" element={<CustomerOrder />} />
       </Routes>
     </BrowserRouter>
