@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Stage, Layer, Rect, Text as KonvaText, Image as KonvaImage, Transformer } from 'react-konva';
+import { Stage, Layer, Line, Rect, Text as KonvaText, Image as KonvaImage, Transformer } from 'react-konva';
 import type Konva from 'konva';
 import useImage from 'use-image';
 import { loadFonts } from '../data/fonts';
@@ -31,14 +31,16 @@ function IconNode({
   interactive,
   onSelect,
   onChange,
-  onStartCrop,
+  onDragMove,
+  onDragStop,
 }: {
   icon: PlacedIcon;
   isSelected: boolean;
   interactive: boolean;
   onSelect: () => void;
   onChange: (attrs: Partial<PlacedIcon>) => void;
-  onStartCrop: () => void;
+  onDragMove: (e: Konva.KonvaEventObject<DragEvent>) => void;
+  onDragStop: () => void;
 }) {
   const isPhoto = !isLibraryIcon(icon.iconId);
   const effectiveSrc = isPhoto ? icon.src : (getIconSrc(icon.iconId, icon.color) ?? icon.src);
@@ -57,9 +59,11 @@ function IconNode({
       draggable={interactive}
       onClick={interactive ? onSelect : undefined}
       onTap={interactive ? onSelect : undefined}
-      onDblClick={interactive && isPhoto ? onStartCrop : undefined}
-      onDblTap={interactive && isPhoto ? onStartCrop : undefined}
-      onDragEnd={(e) => onChange({ x: e.target.x(), y: e.target.y() })}
+      onDragMove={onDragMove}
+      onDragEnd={(e) => {
+        onDragStop();
+        onChange({ x: e.target.x(), y: e.target.y() });
+      }}
       onTransformEnd={(e) => {
         const node = e.target;
         const scaleX = node.scaleX();
@@ -180,6 +184,8 @@ function TextNode({
   onSelect,
   onChange,
   onStartEdit,
+  onDragMove,
+  onDragStop,
 }: {
   field: TextField;
   isSelected: boolean;
@@ -188,6 +194,8 @@ function TextNode({
   onSelect: () => void;
   onChange: (attrs: Partial<TextField>) => void;
   onStartEdit: () => void;
+  onDragMove: (e: Konva.KonvaEventObject<DragEvent>) => void;
+  onDragStop: () => void;
 }) {
   const textRef = useRef<Konva.Text>(null);
   const [textBox, setTextBox] = useState<{ width: number; height: number } | null>(null);
@@ -254,7 +262,11 @@ function TextNode({
       onTap={interactive ? onSelect : undefined}
       onDblClick={interactive ? onStartEdit : undefined}
       onDblTap={interactive ? onStartEdit : undefined}
-      onDragEnd={(e) => onChange({ x: e.target.x(), y: e.target.y() })}
+      onDragMove={onDragMove}
+      onDragEnd={(e) => {
+        onDragStop();
+        onChange({ x: e.target.x(), y: e.target.y() });
+      }}
       onTransformEnd={(e) => {
         const node = e.target;
         const scaleX = node.scaleX();
@@ -271,6 +283,9 @@ function TextNode({
     </>
   );
 }
+
+/** How close (in canvas px) an element's centre has to get before it snaps to the card's centre. */
+const SNAP_DISTANCE = 8;
 
 interface SelectionRect {
   x: number;
@@ -302,6 +317,33 @@ export default function CanvasEditor({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [guides, setGuides] = useState({ vertical: false, horizontal: false });
+
+  /**
+   * Nudges a dragged element onto the card's centre line when it comes close, and shows the
+   * guide while it's held there — centring by eye alone is the fiddliest part of the editor.
+   * Uses the node's rendered box so rotated elements snap by what you actually see.
+   */
+  function handleDragMove(e: Konva.KonvaEventObject<DragEvent>) {
+    const node = e.target;
+    // Konva can emit one more dragmove on the frame after dragend; without this the guide it
+    // turns back on never gets cleared and stays painted on the card.
+    if (!node.isDragging()) return;
+    const layer = node.getLayer();
+    if (!layer) return;
+    const box = node.getClientRect({ relativeTo: layer });
+    const dx = width / 2 - (box.x + box.width / 2);
+    const dy = height / 2 - (box.y + box.height / 2);
+    const vertical = Math.abs(dx) <= SNAP_DISTANCE;
+    const horizontal = Math.abs(dy) <= SNAP_DISTANCE;
+    if (vertical) node.x(node.x() + dx);
+    if (horizontal) node.y(node.y() + dy);
+    setGuides((prev) => (prev.vertical === vertical && prev.horizontal === horizontal ? prev : { vertical, horizontal }));
+  }
+
+  function handleDragStop() {
+    setGuides((prev) => (prev.vertical || prev.horizontal ? { vertical: false, horizontal: false } : prev));
+  }
 
   // shrink the card to fit narrow (mobile) screens, keeping the canvas at full resolution
   useEffect(() => {
@@ -428,7 +470,8 @@ export default function CanvasEditor({
                   interactive={interactive}
                   onSelect={() => onSelect({ type: 'icon', uid: item.data.uid })}
                   onChange={(attrs) => onIconChange(item.data.uid, attrs)}
-                  onStartCrop={() => startCropping(item.data)}
+                  onDragMove={handleDragMove}
+                  onDragStop={handleDragStop}
                 />
               );
             }
@@ -442,9 +485,17 @@ export default function CanvasEditor({
                 onSelect={() => onSelect({ type: 'text', id: item.data.id })}
                 onChange={(attrs) => onTextChange(item.data.id, attrs)}
                 onStartEdit={() => startEditingText(item.data)}
+                onDragMove={handleDragMove}
+                onDragStop={handleDragStop}
               />
             );
           })}
+          {guides.vertical && (
+            <Line points={[width / 2, 0, width / 2, height]} stroke="#ff3b9a" strokeWidth={1} dash={[5, 4]} listening={false} />
+          )}
+          {guides.horizontal && (
+            <Line points={[0, height / 2, width, height / 2]} stroke="#ff3b9a" strokeWidth={1} dash={[5, 4]} listening={false} />
+          )}
           {interactive && (
             <Transformer
               ref={trRef}
