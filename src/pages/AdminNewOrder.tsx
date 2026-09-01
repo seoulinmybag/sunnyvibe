@@ -82,6 +82,8 @@ export default function AdminNewOrder() {
   const [bride, setBride] = useState<FamilySide>(emptyFamily);
   const [deceasedStyle, setDeceasedStyle] = useState<'hanja' | 'flower'>('hanja');
   const [date, setDate] = useState('');
+  const [weddingDate, setWeddingDate] = useState('');
+  const [transport, setTransport] = useState({ address: '', phone: '', subway: '', bus: '', parking: '' });
   const [venue, setVenue] = useState('');
   const [greeting, setGreeting] = useState('');
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape');
@@ -103,7 +105,8 @@ export default function AdminNewOrder() {
 
   const anyDeceased =
     groom.fatherDeceased || groom.motherDeceased || bride.fatherDeceased || bride.motherDeceased;
-  const mapForced = panelType === 'fold';
+  const isFold = panelType === 'fold';
+  const mapForced = isFold;
   const mapChecked = mapForced || hasMap;
 
   useEffect(() => {
@@ -122,6 +125,7 @@ export default function AdminNewOrder() {
 
     if (!customerName.trim()) return setError('고객명을 입력해주세요.');
     if (!photo) return setError('신랑신부 사진을 올려주세요.');
+    if (isFold && !weddingDate) return setError('2단은 외지 뒷면에 달력이 들어가서 예식일을 선택해야 해요.');
     if (mapChecked && !map) return setError('약도 이미지를 올려주세요.');
     if (hasQr && !qr) return setError('QR 이미지를 올려주세요.');
 
@@ -138,6 +142,14 @@ export default function AdminNewOrder() {
     }
     form.set('deceased_style', deceasedStyle);
     form.set('date', date);
+    form.set('wedding_date', weddingDate);
+    if (isFold) {
+      form.set('transport_address', transport.address);
+      form.set('transport_phone', transport.phone);
+      form.set('transport_subway', transport.subway);
+      form.set('transport_bus', transport.bus);
+      form.set('transport_parking', transport.parking);
+    }
     form.set('venue', venue);
     form.set('greeting', greeting);
     form.set('panel_type', panelType);
@@ -247,6 +259,11 @@ export default function AdminNewOrder() {
         </label>
 
         <label className="admin-field">
+          <span>예식일 {isFold ? '(2단 달력용 · 필수)' : '(달력용)'}</span>
+          <input type="date" value={weddingDate} onChange={(e) => setWeddingDate(e.target.value)} />
+        </label>
+
+        <label className="admin-field">
           <span>장소</span>
           <input type="text" value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="OO웨딩홀 3층 그랜드홀" />
         </label>
@@ -283,6 +300,11 @@ export default function AdminNewOrder() {
               <input type="radio" checked={panelType === 'fold'} onChange={() => setPanelType('fold')} /> 2단 접지형
             </label>
           </div>
+          {isFold && (
+            <p className="admin-hint">
+              2단은 외지 앞(표지) · 외지 뒤(달력) · 내지 좌(약도·교통) · 내지 우(인사말) 네 면으로 만들어져요. 약도는 필수입니다.
+            </p>
+          )}
         </div>
 
         <div className="admin-field">
@@ -322,6 +344,30 @@ export default function AdminNewOrder() {
                 placeholder={'신부측 혼주: (대구은행) 000-00-000000\n신부: (대구은행) 000-00-000000'}
               />
             </label>
+          </fieldset>
+        )}
+
+        {isFold && (
+          <fieldset className="admin-fieldset">
+            <legend>내지 좌측 · 교통 안내</legend>
+            <p className="admin-hint">약도 아래에 들어가요. 비운 항목은 빈 칸으로 남고 고객이 채울 수 있어요.</p>
+            {([
+              ['address', '주소', '경기 용인시 수지구 신봉1로344번길 1 누에바 파밀리아 웨딩', 1],
+              ['phone', '전화', '031. 266. 7772', 1],
+              ['subway', '지하철', '신분당선 수지구청역 3-4번 출구 사이 셔틀버스 운행 (약 15분 소요)', 2],
+              ['bus', '버스', '서봉마을 노블랜드(15-2) 정류장 하차 (도보 약 3분)', 2],
+              ['parking', '주차', '건물 지하 주차장 2시간 무료', 2],
+            ] as const).map(([key, label, placeholder, rows]) => (
+              <label key={key} className="admin-field">
+                <span>{label}</span>
+                <textarea
+                  rows={rows}
+                  value={transport[key]}
+                  placeholder={placeholder}
+                  onChange={(e) => setTransport((prev) => ({ ...prev, [key]: e.target.value }))}
+                />
+              </label>
+            ))}
           </fieldset>
         )}
 

@@ -2,13 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Editor from '../components/Editor';
 import type { ConfirmPayload } from '../components/Toolbar';
-import type { Orientation, PageState, Side } from '../types';
+import type { Orientation, Pages } from '../types';
 
 interface OrderData {
   id: string;
   customerName: string;
   orientation: Orientation;
-  pages: Record<Side, PageState>;
+  pages: Pages;
   status: 'draft' | 'sent' | 'confirmed';
 }
 
@@ -38,7 +38,7 @@ export default function CustomerOrder() {
   const orderRef = useRef<{ id: string; status: OrderData['status'] } | null>(null);
   const saveTimeoutRef = useRef<number | null>(null);
   /** Latest design, so 임시저장 and the leave-the-page flush can write without waiting for a render. */
-  const pagesRef = useRef<Record<Side, PageState> | null>(null);
+  const pagesRef = useRef<Pages | null>(null);
   const dirtyRef = useRef(false);
 
   useEffect(() => {
@@ -83,7 +83,7 @@ export default function CustomerOrder() {
   }, []);
 
   const handlePagesChange = useCallback(
-    (pages: Record<Side, PageState>) => {
+    (pages: Pages) => {
       const current = orderRef.current;
       if (!current || current.status === 'confirmed') return;
       pagesRef.current = pages;

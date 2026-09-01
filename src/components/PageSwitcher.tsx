@@ -1,19 +1,25 @@
-import type { Side } from '../types';
+import { sideLabel } from '../types';
+import type { PanelType, Side } from '../types';
 
 interface Props {
+  sides: Side[];
   side: Side;
+  panelType: PanelType;
   onChange: (side: Side) => void;
 }
 
-export default function PageSwitcher({ side, onChange }: Props) {
+export default function PageSwitcher({ sides, side, panelType, onChange }: Props) {
   return (
     <div className="page-switcher">
-      <button className={'page-switcher-btn' + (side === 'front' ? ' page-switcher-active' : '')} onClick={() => onChange('front')}>
-        앞
-      </button>
-      <button className={'page-switcher-btn' + (side === 'back' ? ' page-switcher-active' : '')} onClick={() => onChange('back')}>
-        뒤
-      </button>
+      {sides.map((s) => (
+        <button
+          key={s}
+          className={'page-switcher-btn' + (side === s ? ' page-switcher-active' : '')}
+          onClick={() => onChange(s)}
+        >
+          {sideLabel(s, panelType)}
+        </button>
+      ))}
     </div>
   );
 }

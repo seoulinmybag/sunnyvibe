@@ -160,6 +160,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       date: fields.date || '',
       venue: fields.venue || '',
       greeting: fields.greeting || '',
+      weddingDate: fields.wedding_date || '',
+      transport: {
+        address: fields.transport_address ?? '',
+        phone: fields.transport_phone ?? '',
+        subway: fields.transport_subway ?? '',
+        bus: fields.transport_bus ?? '',
+        parking: fields.transport_parking ?? '',
+      },
     };
     // the generator needs loadable URLs, but what gets stored has to outlive them
     const pages = normalizePagesForStorage(buildInitialPages(layoutOptions));
@@ -172,7 +180,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       customer_name: customerName,
       groom_name: groom.name || null,
       bride_name: bride.name || null,
-      wedding_date: fields.date || null,
+      wedding_date: fields.wedding_date || fields.date || null,
       venue: fields.venue || null,
       greeting: fields.greeting || null,
       panel_type: panelType,

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Editor from './components/Editor';
 import { buildInitialPages } from './lib/layoutGenerator';
-import type { Orientation, PageState, Side } from './types';
+import type { Orientation, Pages } from './types';
 
 function readInitParams(): { orientation: Orientation; photo: string | null } {
   const params = new URLSearchParams(window.location.search);
@@ -11,7 +11,7 @@ function readInitParams(): { orientation: Orientation; photo: string | null } {
 }
 
 /** Sample content for the scratch canvas — the real per-order values come from the admin form. */
-function makeSamplePages(orientation: Orientation, photo: string | null): Record<Side, PageState> {
+function makeSamplePages(orientation: Orientation, photo: string | null): Pages {
   return buildInitialPages({
     panelType: 'single',
     hasAccount: false,
@@ -42,15 +42,17 @@ function makeSamplePages(orientation: Orientation, photo: string | null): Record
     date: '2026년 10월 10일 토요일 오후 1시',
     venue: 'OO웨딩홀 3층 그랜드홀',
     greeting: '',
+    weddingDate: '',
+    transport: { address: '', phone: '', subway: '', bus: '', parking: '' },
   });
 }
 
 /** The `/` playground: no persistence, no sharing — just a scratch canvas. Real orders live under /order/:id. */
 export default function App() {
   const [initParams] = useState(readInitParams);
-  const [initialPages] = useState<Record<Side, PageState>>(() =>
+  const [initialPages] = useState<Pages>(() =>
     makeSamplePages(initParams.orientation, initParams.photo),
   );
 
-  return <Editor orientation={initParams.orientation} initialPages={initialPages} showCustomerLinkPanel />;
+  return <Editor orientation={initParams.orientation} initialPages={initialPages} showCustomerLinkPanel allowOrientationChange />;
 }

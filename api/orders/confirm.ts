@@ -24,14 +24,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const { frontPrintPng, backPrintPng, frontSvg, backSvg } = req.body ?? {};
-  if (
-    typeof frontPrintPng !== 'string' ||
-    typeof backPrintPng !== 'string' ||
-    typeof frontSvg !== 'string' ||
-    typeof backSvg !== 'string'
-  ) {
-    res.status(400).json({ ok: false, error: 'frontPrintPng/backPrintPng/frontSvg/backSvg가 필요해요' });
+  // 1단은 두 면, 2단 접지는 외지 2면 + 내지 2면으로 넘어온다
+  const panels: Array<{ side: string; printPng: string; svg: string }> = Array.isArray(req.body?.panels) ? req.body.panels : [];
+  const valid =
+    panels.length > 0 &&
+    panels.every(
+      (p) => p && typeof p.side === 'string' && typeof p.printPng === 'string' && typeof p.svg === 'string',
+    );
+  if (!valid) {
+    res.status(400).json({ ok: false, error: 'panels(면별 printPng/svg)가 필요해요' });
     return;
   }
 
@@ -47,27 +48,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const spec = ORIENTATIONS[orientation];
     const pageOrientation = orientation === 'landscape' ? 'landscape' : 'portrait';
 
-    const frontPngBuffer = dataUriToBuffer(frontPrintPng);
-    const backPngBuffer = dataUriToBuffer(backPrintPng);
-
     const doc = new jsPDF({ orientation: pageOrientation, unit: 'mm', format: [spec.printWidthMm, spec.printHeightMm] });
-    doc.addImage(frontPrintPng, 'PNG', 0, 0, spec.printWidthMm, spec.printHeightMm, undefined, 'FAST');
-    doc.addPage([spec.printWidthMm, spec.printHeightMm], pageOrientation);
-    doc.addImage(backPrintPng, 'PNG', 0, 0, spec.printWidthMm, spec.printHeightMm, undefined, 'FAST');
+    panels.forEach((panel, i) => {
+      if (i > 0) doc.addPage([spec.printWidthMm, spec.printHeightMm], pageOrientation);
+      doc.addImage(panel.printPng, 'PNG', 0, 0, spec.printWidthMm, spec.printHeightMm, undefined, 'FAST');
+    });
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
 
     const pdfPath = `${orderId}/design.pdf`;
-    const frontPngPath = `${orderId}/front.png`;
-    const backPngPath = `${orderId}/back.png`;
-    const frontSvgPath = `${orderId}/front.svg`;
-    const backSvgPath = `${orderId}/back.svg`;
-
     const uploads = await Promise.all([
       admin.storage.from(BUCKET).upload(pdfPath, pdfBuffer, { contentType: 'application/pdf', upsert: true }),
-      admin.storage.from(BUCKET).upload(frontPngPath, frontPngBuffer, { contentType: 'image/png', upsert: true }),
-      admin.storage.from(BUCKET).upload(backPngPath, backPngBuffer, { contentType: 'image/png', upsert: true }),
-      admin.storage.from(BUCKET).upload(frontSvgPath, Buffer.from(frontSvg, 'utf-8'), { contentType: 'image/svg+xml', upsert: true }),
-      admin.storage.from(BUCKET).upload(backSvgPath, Buffer.from(backSvg, 'utf-8'), { contentType: 'image/svg+xml', upsert: true }),
+      ...panels.flatMap((panel) => [
+        admin.storage
+          .from(BUCKET)
+          .upload(`${orderId}/${panel.side}.png`, dataUriToBuffer(panel.printPng), { contentType: 'image/png', upsert: true }),
+        admin.storage
+          .from(BUCKET)
+          .upload(`${orderId}/${panel.side}.svg`, Buffer.from(panel.svg, 'utf-8'), { contentType: 'image/svg+xml', upsert: true }),
+      ]),
     ]);
     const uploadError = uploads.find((u) => u.error)?.error;
     if (uploadError) throw new Error(uploadError.message);
@@ -78,8 +76,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         status: 'confirmed',
         confirmed_at: new Date().toISOString(),
         confirmed_pdf_path: pdfPath,
-        confirmed_png_path: frontPngPath,
-        confirmed_svg_path: frontSvgPath,
+        confirmed_png_path: `${orderId}/${panels[0].side}.png`,
+        confirmed_svg_path: `${orderId}/${panels[0].side}.svg`,
         updated_at: new Date().toISOString(),
       })
       .eq('id', orderId);

@@ -929,3 +929,14 @@ button.secondary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* 2단은 네 면이라 미리보기를 더 넓게 편다 */
+.preview-grid-wide {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 900px) {
+  .preview-grid-wide {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

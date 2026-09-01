@@ -1,6 +1,7 @@
 import { ORIENTATIONS } from '../data/orientation.js';
 import { TEMPLATES } from '../data/templates.js';
-import type { Orientation, PageState, PlacedIcon, TextField } from '../types.js';
+import { buildCalendarSvg, parseWeddingDate } from './calendar.js';
+import type { Orientation, PageState, PlacedIcon, Side, TextField } from '../types.js';
 
 const INITIAL_TEMPLATE = TEMPLATES[0]; // 화이트
 
@@ -118,6 +119,46 @@ const QR_GUIDE = '모바일 청첩장을 확인해 보세요.\nQR CODE를 카메
 /** 인쇄 시 실제 변 길이(mm). QR 스캔 권장 최소치가 15mm 안팎이라 그보다 작아지지 않게 둔다. */
 const QR_PRINT_MM = 14;
 
+const CALENDAR_TITLE = 'MY WEDDING DAY';
+const CALENDAR_SUBTITLE = 'weather is';
+/** 손글씨 느낌이 나야 레퍼런스와 맞아서 기본 글꼴만 다르게 준다. */
+const CALENDAR_FONT = "'Caveat', cursive";
+
+/**
+ * 기본으로 얹는 해 아이콘. 아이콘 라이브러리는 브라우저 전용(import.meta.glob)이라 서버에서
+ * 초기 시안을 만들 때 참조할 수 없어서, 여기에 인라인 SVG로 둔다. 고객이 지우고 날씨 카테고리의
+ * 다른 아이콘으로 바꿔 끼울 수 있다.
+ */
+const SUN_ICON = `data:image/svg+xml;utf8,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" stroke="#f5a623" stroke-width="3" stroke-linecap="round">' +
+    '<circle cx="24" cy="24" r="9" fill="#fbd46d" stroke="#f5a623"/>' +
+    '<path d="M24 4v6M24 38v6M4 24h6M38 24h6M10 10l4 4M34 34l4 4M38 10l-4 4M14 34l-4 4"/>' +
+    '</svg>',
+)}`;
+
+/** 2단 외지 뒷면(달력)과 내지 좌측(약도·교통) 배치. */
+const FOLD_PAGES: Record<Orientation, {
+  calendar: { titleY: number; titleSize: number; subtitleY: number; subtitleSize: number; gridTop: number; gridHeight: number; gridWidth: number };
+  transport: { mapTop: number; mapBottom: number; rows: number[]; labelSize: number; valueSize: number };
+}> = {
+  landscape: {
+    calendar: { titleY: 0.16, titleSize: 34, subtitleY: 0.3, subtitleSize: 17, gridTop: 0.42, gridHeight: 0.4, gridWidth: 0.5 },
+    transport: { mapTop: 0.05, mapBottom: 0.5, rows: [0.58, 0.65, 0.73, 0.83, 0.92], labelSize: 10, valueSize: 9 },
+  },
+  portrait: {
+    calendar: { titleY: 0.28, titleSize: 30, subtitleY: 0.355, subtitleSize: 16, gridTop: 0.43, gridHeight: 0.24, gridWidth: 0.56 },
+    transport: { mapTop: 0.06, mapBottom: 0.56, rows: [0.63, 0.685, 0.755, 0.85, 0.93], labelSize: 11, valueSize: 10 },
+  },
+};
+
+const TRANSPORT_ROWS = [
+  { key: 'address', label: '주소' },
+  { key: 'phone', label: '전화' },
+  { key: 'subway', label: '지하철' },
+  { key: 'bus', label: '버스' },
+  { key: 'parking', label: '주차' },
+] as const;
+
 /** 고인 표시: 한자 '故' 또는 국화꽃. 인쇄 문제가 없도록 이모지가 아닌 일반 글리프를 쓴다. */
 export const DECEASED_MARKS = { hanja: '故', flower: '✿' } as const;
 export type DeceasedStyle = keyof typeof DECEASED_MARKS;
@@ -161,6 +202,16 @@ export interface LayoutOptions {
   names: string;
   /** 앞면 하단 자막 문구. 비우면 자막 바 없이 빈 슬롯으로 남는다. */
   title: string;
+  /** yyyy-mm-dd. 2단 외지 뒷면의 달력을 그리는 데만 쓴다. */
+  weddingDate: string;
+  /** 2단 내지 좌측의 교통 안내. 비면 빈 슬롯으로 남는다. */
+  transport: {
+    address: string;
+    phone: string;
+    subway: string;
+    bus: string;
+    parking: string;
+  };
   date: string;
   venue: string;
   greeting: string;
@@ -332,6 +383,129 @@ function buildFrontPage(opts: LayoutOptions): PageState {
   return { icons, texts, templateId: INITIAL_TEMPLATE.id, customColor: null };
 }
 
+/** 우하단 고정 QR + 좌하단 안내문구. 1단은 뒷면, 2단은 외지 뒷면(달력)에 붙는다. */
+function addQrBlock(opts: LayoutOptions, icons: PlacedIcon[], texts: TextField[], startZ: number): number {
+  if (!opts.hasQr || !opts.qrUrl) return startZ;
+  const spec = ORIENTATIONS[opts.orientation];
+  const w = spec.displayWidth;
+  const h = spec.displayHeight;
+  const cfg = BACK[opts.orientation];
+  let z = startZ;
+  // 화면 좌표가 아니라 인쇄 mm 기준으로 잡아야 실제 출력에서 스캔되는 크기가 나온다
+  const size = (QR_PRINT_MM / spec.printWidthMm) * w;
+  icons.push({
+    uid: 'layout-qr',
+    iconId: 'layout-qr',
+    src: opts.qrUrl,
+    x: w - size - w * cfg.qrMarginX,
+    y: h - size - h * cfg.qrMarginY,
+    width: size,
+    height: size,
+    rotation: 0,
+    zIndex: z++,
+  });
+  texts.push(
+    makeText('qr-guide', 'QR 안내문구', QR_GUIDE, { x: w * 0.05, y: h * cfg.qrGuideY, width: w * 0.55 }, cfg.qrGuideSize, z++, {
+      align: 'left',
+    }),
+  );
+  return z;
+}
+
+/** 2단 외지 뒷면 — MY WEDDING DAY 달력. QR을 쓰는 2단이면 QR도 이 면 우하단에 붙는다. */
+function buildCalendarPage(opts: LayoutOptions): PageState {
+  const spec = ORIENTATIONS[opts.orientation];
+  const w = spec.displayWidth;
+  const h = spec.displayHeight;
+  const cfg = FOLD_PAGES[opts.orientation].calendar;
+  const fieldWidth = w * 0.82;
+  const x = (w - fieldWidth) / 2;
+
+  const texts: TextField[] = [
+    makeText('calendar-title', '달력 제목', CALENDAR_TITLE, { x, y: h * cfg.titleY, width: fieldWidth }, cfg.titleSize, 1, {
+      fontFamily: CALENDAR_FONT,
+    }),
+    // 해 아이콘 자리를 비워두려고 글자 상자를 살짝 왼쪽으로 민다
+    makeText('calendar-subtitle', '달력 소제목', CALENDAR_SUBTITLE, { x: x - w * 0.03, y: h * cfg.subtitleY, width: fieldWidth }, cfg.subtitleSize, 2, {
+      fontFamily: CALENDAR_FONT,
+    }),
+  ];
+
+  const iconSize = w * 0.05;
+  const icons: PlacedIcon[] = [
+    {
+      uid: 'calendar-weather',
+      iconId: 'calendar-weather',
+      src: SUN_ICON,
+      x: w / 2 + w * 0.05,
+      y: h * cfg.subtitleY - iconSize * 0.15,
+      width: iconSize,
+      height: iconSize,
+      rotation: 0,
+      zIndex: 3,
+    },
+  ];
+
+  const parsed = parseWeddingDate(opts.weddingDate);
+  if (parsed) {
+    const grid = buildCalendarSvg(parsed.year, parsed.month, parsed.day, INITIAL_TEMPLATE.textColorDefault);
+    const width = w * cfg.gridWidth;
+    const height = (width / grid.width) * grid.height;
+    icons.push({
+      uid: 'calendar-grid',
+      iconId: 'calendar-grid',
+      src: grid.dataUri,
+      x: (w - width) / 2,
+      y: h * cfg.gridTop,
+      width,
+      height,
+      rotation: 0,
+      zIndex: 4,
+    });
+  }
+
+  addQrBlock(opts, icons, texts, 5);
+  return { icons, texts, templateId: INITIAL_TEMPLATE.id, customColor: null };
+}
+
+/** 2단 내지 좌측 — 약도와 그 아래 주소·전화·지하철·버스·주차 안내. */
+function buildTransportPage(opts: LayoutOptions): PageState {
+  const spec = ORIENTATIONS[opts.orientation];
+  const w = spec.displayWidth;
+  const h = spec.displayHeight;
+  const cfg = FOLD_PAGES[opts.orientation].transport;
+
+  const icons: PlacedIcon[] = [];
+  if (opts.mapUrl) {
+    icons.push(
+      makeImageIconInBox(
+        'layout-map',
+        opts.mapUrl,
+        opts.mapSize,
+        { x: w * 0.06, y: h * cfg.mapTop, width: w * 0.88, height: h * (cfg.mapBottom - cfg.mapTop) },
+        1,
+      ),
+    );
+  }
+
+  // 라벨과 값을 따로 두어야 레퍼런스처럼 왼쪽 라벨 열이 세로로 맞는다
+  let z = 2;
+  const texts: TextField[] = [];
+  TRANSPORT_ROWS.forEach((row, i) => {
+    const y = h * cfg.rows[i];
+    texts.push(
+      makeText(`transport-${row.key}-label`, `${row.label} (제목)`, row.label, { x: w * 0.06, y, width: w * 0.14 }, cfg.labelSize, z++, {
+        align: 'left',
+      }),
+      makeText(`transport-${row.key}`, row.label, opts.transport[row.key], { x: w * 0.21, y, width: w * 0.73 }, cfg.valueSize, z++, {
+        align: 'left',
+      }),
+    );
+  });
+
+  return { icons, texts, templateId: INITIAL_TEMPLATE.id, customColor: null };
+}
+
 /**
  * 1단 뒷면 — 레퍼런스 배치:
  * 인사말 / 날짜 / 장소 / 좌·우 혼주+이름 / 좌·우 계좌 / 우하단 QR + 좌하단 안내문구.
@@ -397,92 +571,25 @@ function buildSinglePanelBack(opts: LayoutOptions): PageState {
     );
   }
 
-  if (opts.hasQr && opts.qrUrl) {
-    // 레퍼런스의 검은 네모 자리 — 밴드에 넣지 않고 우하단에 고정한다.
-    // 화면 좌표가 아니라 인쇄 mm 기준으로 잡아야 실제 출력에서 스캔되는 크기가 나온다.
-    const size = (QR_PRINT_MM / spec.printWidthMm) * w;
-    icons.push({
-      uid: 'layout-qr',
-      iconId: 'layout-qr',
-      src: opts.qrUrl,
-      x: w - size - w * cfg.qrMarginX,
-      y: h - size - h * cfg.qrMarginY,
-      width: size,
-      height: size,
-      rotation: 0,
-      zIndex: z++,
-    });
-    texts.push(
-      makeText('qr-guide', 'QR 안내문구', QR_GUIDE, { x: w * 0.05, y: h * cfg.qrGuideY, width: w * 0.55 }, cfg.qrGuideSize, z++, {
-        align: 'left',
-      }),
-    );
-  }
+  z = addQrBlock(opts, icons, texts, z);
 
   return { icons, texts, templateId: INITIAL_TEMPLATE.id, customColor: null };
 }
 
-/**
- * 2단 접지형(fold) 내지: 좌측은 약도(+계좌/QR), 우측은 인사말과 날짜·장소.
- * 접지 미리보기는 없고 한 장의 캔버스를 좌/우로 나눠 쓴다.
- */
-function buildFoldBack(opts: LayoutOptions): PageState {
-  const spec = ORIENTATIONS[opts.orientation];
-  const w = spec.displayWidth;
-  const h = spec.displayHeight;
-  const colWidth = w * 0.42;
-  const leftX = w * 0.04;
-  const rightX = w * 0.54;
-
-  const extras: Array<'account' | 'qr'> = [];
-  if (opts.hasAccount) extras.push('account');
-  if (opts.hasQr) extras.push('qr');
-
-  const mapBottom = extras.length === 0 ? 0.88 : 0.6;
-  const icons: PlacedIcon[] = [
-    makeImageIconInBox(
-      'layout-map',
-      opts.mapUrl!,
-      opts.mapSize,
-      { x: leftX, y: h * 0.1, width: colWidth, height: h * (mapBottom - 0.1) },
-      1,
-    ),
-  ];
-  const texts: TextField[] = [
-    makeText('message', '인사말', opts.greeting || DEFAULT_GREETING, { x: rightX, y: h * 0.12, width: colWidth }, 16, 2),
-    makeText('date', '날짜', opts.date, { x: rightX, y: h * 0.74, width: colWidth }, 17, 3),
-    makeText('venue', '장소', opts.venue, { x: rightX, y: h * 0.81, width: colWidth }, 15, 4),
-  ];
-
-  let z = 5;
-  if (hasFamilyInfo(opts)) {
-    // 우측 패널을 다시 반으로 나눠 신랑측/신부측을 나란히 둔다
-    const subWidth = colWidth / 2 - w * 0.01;
-    texts.push(
-      ...makeFamilyBlock(opts, rightX, rightX + colWidth - subWidth, subWidth, h * 0.52, 11, h * 0.575, 17, z),
-    );
-    z += 4;
-  }
-  const extrasBandHeight = ((0.9 - mapBottom) / Math.max(extras.length, 1)) * h;
-  extras.forEach((kind, i) => {
-    const box: Box = { x: leftX, y: h * mapBottom + i * extrasBandHeight, width: colWidth, height: extrasBandHeight };
-    if (kind === 'account') {
-      const half = colWidth / 2 - w * 0.005;
-      texts.push(
-        makeAccountText('account-groom', '신랑측 계좌', opts.accountGroom, { x: box.x, y: box.y, width: half }, 10, z++),
-        makeAccountText('account-bride', '신부측 계좌', opts.accountBride, { x: box.x + colWidth - half, y: box.y, width: half }, 10, z++),
-      );
-    }
-    if (kind === 'qr') icons.push(makeImageIconInBox('layout-qr', opts.qrUrl!, opts.qrSize, box, z++));
-  });
-
-  return { icons, texts, templateId: INITIAL_TEMPLATE.id, customColor: null };
-}
-
-export function buildInitialPages(rawOpts: LayoutOptions): { front: PageState; back: PageState } {
-  // 2단 접지형 always includes 약도 — normalize here even if the caller already did, defense in depth
+export function buildInitialPages(rawOpts: LayoutOptions): Partial<Record<Side, PageState>> {
+  // 2단 접지형은 내지 좌측이 약도 면이라 약도가 항상 붙는다
   const opts: LayoutOptions = { ...rawOpts, hasMap: rawOpts.panelType === 'fold' ? true : rawOpts.hasMap };
   const front = buildFrontPage(opts);
-  const back = opts.panelType === 'fold' && opts.mapUrl ? buildFoldBack(opts) : buildSinglePanelBack(opts);
-  return { front, back };
+
+  if (opts.panelType !== 'fold') {
+    return { front, back: buildSinglePanelBack(opts) };
+  }
+
+  return {
+    front,
+    // 외지 뒷면은 달력이 차지하고, 약도와 QR은 각자 자기 면으로 간다
+    back: buildCalendarPage(opts),
+    'inner-left': buildTransportPage(opts),
+    'inner-right': buildSinglePanelBack({ ...opts, hasMap: false, hasQr: false }),
+  };
 }

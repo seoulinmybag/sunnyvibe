@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import type { PageState, Side } from '../types';
+import { panelTypeOf, sideLabel, sidesFor } from '../types';
+import type { Pages, Side } from '../types';
 
 interface OrderDetail {
   id: string;
@@ -8,10 +9,8 @@ interface OrderDetail {
   panelType: 'single' | 'fold';
   status: 'draft' | 'sent' | 'confirmed';
   customerLink: string;
-  pages: Record<Side, PageState>;
+  pages: Pages;
 }
-
-const SIDE_LABEL: Record<Side, string> = { front: '앞면', back: '뒷면' };
 
 /** These read better as a box than a single line. */
 const MULTILINE_FIELDS = new Set(['message', 'account', 'account-groom', 'account-bride', 'qr-guide']);
@@ -20,7 +19,7 @@ export default function AdminOrderText() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [order, setOrder] = useState<OrderDetail | null>(null);
-  const [pages, setPages] = useState<Record<Side, PageState> | null>(null);
+  const [pages, setPages] = useState<Pages | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -51,17 +50,11 @@ export default function AdminOrderText() {
   }, [id, navigate]);
 
   function updateText(side: Side, fieldId: string, text: string) {
-    setPages((prev) =>
-      prev
-        ? {
-            ...prev,
-            [side]: {
-              ...prev[side],
-              texts: prev[side].texts.map((t) => (t.id === fieldId ? { ...t, text } : t)),
-            },
-          }
-        : prev,
-    );
+    setPages((prev) => {
+      const page = prev?.[side];
+      if (!prev || !page) return prev;
+      return { ...prev, [side]: { ...page, texts: page.texts.map((t) => (t.id === fieldId ? { ...t, text } : t)) } };
+    });
   }
 
   async function handleSave() {
@@ -126,16 +119,15 @@ export default function AdminOrderText() {
           {locked && ' 확정된 주문이라 지금은 수정할 수 없어요.'}
         </p>
 
-        {(['front', 'back'] as Side[]).map((side) => (
+        {sidesFor(panelTypeOf(pages))
+          .filter((side) => pages[side])
+          .map((side) => (
           <fieldset key={side} className="admin-fieldset">
-            <legend>
-              {SIDE_LABEL[side]}
-              {order.panelType === 'fold' && side === 'back' ? ' (내지)' : ''}
-            </legend>
-            {pages[side].texts.length === 0 ? (
+            <legend>{sideLabel(side, panelTypeOf(pages))}</legend>
+            {pages[side]!.texts.length === 0 ? (
               <p className="admin-hint">이 면에는 문구가 없어요.</p>
             ) : (
-              pages[side].texts.map((field) => (
+              pages[side]!.texts.map((field) => (
                 <label key={field.id} className="admin-field">
                   <span>{field.label}</span>
                   {MULTILINE_FIELDS.has(field.id) ? (

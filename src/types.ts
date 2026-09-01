@@ -80,7 +80,37 @@ export interface OrientationSpec {
   downloadHeightPx: number;
 }
 
-export type Side = 'front' | 'back';
+/**
+ * 1단은 front/back 두 면, 2단 접지는 여기에 내지 두 면이 더 붙는다.
+ * front = 외지 앞(표지), back = 외지 뒤(달력), inner-left = 내지 좌(약도·교통), inner-right = 내지 우(인사말).
+ */
+export type Side = 'front' | 'back' | 'inner-left' | 'inner-right';
+
+export type PanelType = 'single' | 'fold';
+
+/** A design's panels. 1단 has front/back; 2단 adds the two inner panels. */
+export type Pages = Partial<Record<Side, PageState>>;
+
+export const SINGLE_SIDES: Side[] = ['front', 'back'];
+export const FOLD_SIDES: Side[] = ['front', 'back', 'inner-left', 'inner-right'];
+
+export function sidesFor(panelType: PanelType): Side[] {
+  return panelType === 'fold' ? FOLD_SIDES : SINGLE_SIDES;
+}
+
+export function sideLabel(side: Side, panelType: PanelType): string {
+  if (panelType === 'fold') {
+    if (side === 'front') return '외지 앞';
+    if (side === 'back') return '외지 뒤';
+    return side === 'inner-left' ? '내지 좌' : '내지 우';
+  }
+  return side === 'front' ? '앞' : '뒤';
+}
+
+/** Which panels a saved design actually has, in print order. */
+export function panelTypeOf(pages: Partial<Record<Side, unknown>>): PanelType {
+  return pages['inner-left'] || pages['inner-right'] ? 'fold' : 'single';
+}
 
 export interface PageState {
   icons: PlacedIcon[];

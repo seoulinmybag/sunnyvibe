@@ -16,7 +16,8 @@ import { TEMPLATES } from '../data/templates';
 import { ORIENTATIONS } from '../data/orientation';
 import type { ConfirmPayload } from './Toolbar';
 import type { LayerMove, LayerTarget } from './LayerPanel';
-import type { Orientation, PageState, PlacedIcon, SelectedElement, Side, TextField, Template } from '../types';
+import { panelTypeOf, sidesFor } from '../types';
+import type { Orientation, PageState, Pages, PlacedIcon, SelectedElement, Side, TextField, Template } from '../types';
 import '../App.css';
 
 const INITIAL_TEMPLATE = TEMPLATES[0]; // 화이트
@@ -28,13 +29,15 @@ function resolveTemplate(page: PageState): Template {
 
 interface EditorProps {
   orientation: Orientation;
-  initialPages: Record<Side, PageState>;
+  initialPages: Pages;
   /** Only the standalone `/` playground shows this today. */
   showCustomerLinkPanel?: boolean;
+  /** 1단/2단과 가로/세로는 주문 사양이라 고객 화면에서는 바꿀 수 없어야 한다. */
+  allowOrientationChange?: boolean;
   /** true once the order is confirmed — canvas becomes view-only and editing panels are hidden. */
   readOnly?: boolean;
   /** fired whenever `pages` changes, so a customer-order host can debounce-save it. */
-  onPagesChange?: (pages: Record<Side, PageState>) => void;
+  onPagesChange?: (pages: Pages) => void;
   /** when provided, "시안 확정하기" hands the generated files here instead of just saving a local PDF. */
   onConfirm?: (payload: ConfirmPayload) => Promise<void>;
   /** when provided, the toolbar offers 임시저장 to flush the pending autosave. */
@@ -46,9 +49,10 @@ interface EditorProps {
 let uidCounter = 0;
 
 /** New elements have to land above everything the auto-layout already placed (e.g. the 자막 caption at z 20). */
-function maxZIndex(pages: Record<Side, PageState>): number {
+function maxZIndex(pages: Pages): number {
   let max = 10;
   for (const page of Object.values(pages)) {
+    if (!page) continue;
     for (const icon of page.icons) max = Math.max(max, icon.zIndex);
     for (const text of page.texts) max = Math.max(max, text.zIndex);
   }
@@ -59,6 +63,7 @@ export default function Editor({
   orientation: initialOrientation,
   initialPages,
   readOnly = false,
+  allowOrientationChange = false,
   onPagesChange,
   onConfirm,
   onSaveNow,
@@ -67,9 +72,12 @@ export default function Editor({
   const [orientation, setOrientation] = useState<Orientation>(initialOrientation);
   const spec = ORIENTATIONS[orientation];
 
-  const [pages, setPages] = useState<Record<Side, PageState>>(initialPages);
+  const [pages, setPages] = useState<Pages>(initialPages);
   const [activeSide, setActiveSide] = useState<Side>('front');
-  const activePage = pages[activeSide];
+  // 2단이면 내지 두 면이 더 있다 — 저장된 시안에 있는 면만 보여준다
+  const panelType = panelTypeOf(pages);
+  const sides = sidesFor(panelType).filter((s) => pages[s]);
+  const activePage = pages[activeSide] ?? pages.front!;
 
   useEffect(() => {
     onPagesChange?.(pages);
@@ -83,7 +91,10 @@ export default function Editor({
   const stageRef = useRef<Konva.Stage | null>(null);
 
   function updateActivePage(updater: (p: PageState) => PageState) {
-    setPages((prev) => ({ ...prev, [activeSide]: updater(prev[activeSide]) }));
+    setPages((prev) => {
+      const page = prev[activeSide];
+      return page ? { ...prev, [activeSide]: updater(page) } : prev;
+    });
   }
 
   function handleSwitchSide(side: Side) {
@@ -248,7 +259,13 @@ export default function Editor({
       // 텍스트는 그림이 아니라서 폭이 카드 너비를 따라가는 게 자연스럽다
       texts: p.texts.map((t) => ({ ...t, x: t.x * scaleX, y: t.y * scaleY, width: t.width * scaleX })),
     });
-    setPages((prev) => ({ front: rescale(prev.front), back: rescale(prev.back) }));
+    setPages((prev) => {
+      const next: Pages = {};
+      for (const [side, page] of Object.entries(prev)) {
+        if (page) next[side as Side] = rescale(page);
+      }
+      return next;
+    });
     setOrientation(next);
   }
 
@@ -319,11 +336,11 @@ export default function Editor({
             stageRef={stageRef}
             interactive={!readOnly}
           />
-          <PageSwitcher side={activeSide} onChange={handleSwitchSide} />
+          <PageSwitcher sides={sides} side={activeSide} panelType={panelType} onChange={handleSwitchSide} />
         </section>
         {!readOnly && (
           <aside className="side-col">
-            <OrientationPicker orientation={orientation} onChange={handleOrientationChange} />
+            {allowOrientationChange && <OrientationPicker orientation={orientation} onChange={handleOrientationChange} />}
             <ImageUpload onUpload={handleUploadPhoto} />
             <TemplatePicker
               templateId={activePage.templateId}

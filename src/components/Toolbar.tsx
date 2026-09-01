@@ -3,13 +3,18 @@ import { jsPDF } from 'jspdf';
 import type Konva from 'konva';
 import { ORIENTATIONS } from '../data/orientation';
 import { pageToSvgString } from '../lib/svgExport';
-import type { Orientation, PageState, PlacedIcon, SelectedElement, Side, Template } from '../types';
+import { panelTypeOf, sideLabel, sidesFor } from '../types';
+import type { Orientation, Pages, PageState, PlacedIcon, SelectedElement, Side, Template } from '../types';
+
+export interface ConfirmPanel {
+  side: Side;
+  printPng: string;
+  svg: string;
+}
 
 export interface ConfirmPayload {
-  frontPrintPng: string;
-  backPrintPng: string;
-  frontSvg: string;
-  backSvg: string;
+  /** One entry per panel, in print order — two for 1단, four for 2단. */
+  panels: ConfirmPanel[];
 }
 
 interface Props {
@@ -22,8 +27,8 @@ interface Props {
   stageRef: React.RefObject<Konva.Stage | null>;
   /** true once the order is confirmed — no more edits, only the casual PNG download stays available. */
   readOnly?: boolean;
-  /** both sides' design data, needed to build the SVG export regardless of which side is currently shown. */
-  pages?: Record<Side, PageState>;
+  /** every panel's design data, needed to build the SVG export regardless of which one is shown. */
+  pages?: Pages;
   resolveTemplate?: (page: PageState) => Template;
   /** when provided, "시안 확정하기" hands the generated files here instead of just saving a local PDF. */
   onConfirm?: (payload: ConfirmPayload) => Promise<void>;
@@ -60,9 +65,11 @@ export default function Toolbar({
   saving = false,
 }: Props) {
   const spec = ORIENTATIONS[orientation];
+  const panelType = pages ? panelTypeOf(pages) : 'single';
+  const presentSides = sidesFor(panelType).filter((side) => pages?.[side]);
   const [confirming, setConfirming] = useState(false);
   const [askingConfirm, setAskingConfirm] = useState(false);
-  const [preview, setPreview] = useState<{ front: string; back: string } | null>(null);
+  const [preview, setPreview] = useState<Array<{ side: Side; uri: string }> | null>(null);
   const [previewing, setPreviewing] = useState(false);
 
   function handleDownload() {
@@ -88,14 +95,14 @@ export default function Toolbar({
       await document.fonts?.ready;
       // screen-sized snapshots, not print resolution — this is a look-over, not an export
       const pixelRatio = 1.5;
-      onSwitchSide('front');
-      await wait(80);
-      const front = stage.toDataURL({ pixelRatio, mimeType: 'image/png' });
-      onSwitchSide('back');
-      await wait(80);
-      const back = stage.toDataURL({ pixelRatio, mimeType: 'image/png' });
+      const shots: Array<{ side: Side; uri: string }> = [];
+      for (const side of presentSides) {
+        onSwitchSide(side);
+        await wait(80);
+        shots.push({ side, uri: stage.toDataURL({ pixelRatio, mimeType: 'image/png' }) });
+      }
       onSwitchSide(originalSide);
-      setPreview({ front, back });
+      setPreview(shots);
     } catch (err) {
       console.error(err);
       onSwitchSide(originalSide);
@@ -141,28 +148,32 @@ export default function Toolbar({
         }
       }
 
-      onSwitchSide('front');
-      await wait(80);
-      const frontPrintPng = stage.toDataURL({ pixelRatio, mimeType: 'image/png' });
-      const frontSvg = pageToSvgString(pages.front, resolveTemplate(pages.front), spec, resolveImage);
-
-      onSwitchSide('back');
-      await wait(80);
-      const backPrintPng = stage.toDataURL({ pixelRatio, mimeType: 'image/png' });
-      const backSvg = pageToSvgString(pages.back, resolveTemplate(pages.back), spec, resolveImage);
+      const panels: ConfirmPanel[] = [];
+      for (const side of presentSides) {
+        const page = pages[side];
+        if (!page) continue;
+        onSwitchSide(side);
+        await wait(80);
+        panels.push({
+          side,
+          printPng: stage.toDataURL({ pixelRatio, mimeType: 'image/png' }),
+          svg: pageToSvgString(page, resolveTemplate(page), spec, resolveImage),
+        });
+      }
 
       onSwitchSide(originalSide);
 
       if (onConfirm) {
-        await onConfirm({ frontPrintPng, backPrintPng, frontSvg, backSvg });
+        await onConfirm({ panels });
         return;
       }
 
       // no backend order (the standalone `/` playground) — just save a local PDF like before
       const doc = new jsPDF({ orientation: pageOrientation, unit: 'mm', format: [spec.printWidthMm, spec.printHeightMm] });
-      doc.addImage(frontPrintPng, 'PNG', 0, 0, spec.printWidthMm, spec.printHeightMm, undefined, 'FAST');
-      doc.addPage([spec.printWidthMm, spec.printHeightMm], pageOrientation);
-      doc.addImage(backPrintPng, 'PNG', 0, 0, spec.printWidthMm, spec.printHeightMm, undefined, 'FAST');
+      panels.forEach((panel, i) => {
+        if (i > 0) doc.addPage([spec.printWidthMm, spec.printHeightMm], pageOrientation);
+        doc.addImage(panel.printPng, 'PNG', 0, 0, spec.printWidthMm, spec.printHeightMm, undefined, 'FAST');
+      });
       doc.save(`wedding-invitation-print-${orientation}.pdf`);
     } catch (err) {
       console.error(err);
@@ -211,15 +222,13 @@ export default function Toolbar({
         <div className="modal-backdrop" onClick={() => setPreview(null)}>
           <div className="modal-card modal-preview" onClick={(e) => e.stopPropagation()}>
             <h2>시안 미리보기</h2>
-            <div className="preview-grid">
-              <figure>
-                <img src={preview.front} alt="앞면 시안" />
-                <figcaption>앞면</figcaption>
-              </figure>
-              <figure>
-                <img src={preview.back} alt="뒷면 시안" />
-                <figcaption>뒷면</figcaption>
-              </figure>
+            <div className={'preview-grid' + (preview.length > 2 ? ' preview-grid-wide' : '')}>
+              {preview.map((shot) => (
+                <figure key={shot.side}>
+                  <img src={shot.uri} alt={`${sideLabel(shot.side, panelType)} 시안`} />
+                  <figcaption>{sideLabel(shot.side, panelType)}</figcaption>
+                </figure>
+              ))}
             </div>
             <div className="modal-actions">
               <button onClick={() => setPreview(null)}>닫기</button>
