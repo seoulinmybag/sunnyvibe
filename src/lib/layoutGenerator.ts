@@ -37,8 +37,10 @@ const FRONT: Record<Orientation, {
  */
 interface BackAnchors {
   greetingY: number;
+  greetingSize: number;
   familyParentsY: number;
   familyNameY: number;
+  familyNameSize: number;
   accountY: number;
   dateY: number;
   venueY: number;
@@ -46,69 +48,66 @@ interface BackAnchors {
   mapBottom: number;
 }
 
+/**
+ * 뒷면은 옵션 조합마다 자리가 달라서 8가지를 따로 잡는다 (계좌 × 약도 × QR).
+ * 약도가 없으면 날짜·장소는 맨 아래에 두되, 계좌와 QR이 함께 아래를 채우면 인사말 밑으로 올린다.
+ * 약도가 있으면 인사말 → 혼주 → 계좌 → 약도 → 날짜·장소 → QR 순서로 흐른다.
+ */
 const BACK: Record<Orientation, {
-  greetingSize: number;
   dateSize: number;
   venueSize: number;
   familyParentsSize: number;
-  familyNameSize: number;
   accountSize: number;
-  /** QR은 밴드에 끼우지 않고 우하단에 고정한다 (레퍼런스의 검은 네모 자리). 크기는 QR_PRINT_MM. */
+  /** QR은 밴드에 끼우지 않고 우하단에 고정한다. 크기는 QR_PRINT_MM. */
   qrMarginX: number;
   qrMarginY: number;
   qrGuideY: number;
   qrGuideSize: number;
-  modes: {
-    /** 옵션 없음 */
-    plain: BackAnchors;
-    /** QR만 — 날짜·장소가 QR 줄 바로 위 */
-    qrOnly: BackAnchors;
-    /** 계좌만 — 계좌 아래에 날짜·장소 */
-    accountOnly: BackAnchors;
-    /** QR+계좌 — 아래가 차서 날짜·장소가 위로 */
-    qrAccount: BackAnchors;
-    /** 약도 있음 (QR 없음) */
-    map: BackAnchors;
-    /** 약도 + QR — 날짜·장소가 위로 */
-    mapQr: BackAnchors;
-  };
+  modes: Record<
+    'plain' | 'accountOnly' | 'qrOnly' | 'accountQr' | 'map' | 'mapAccount' | 'mapQr' | 'mapAccountQr',
+    BackAnchors
+  >;
 }> = {
   landscape: {
-    greetingSize: 15,
-    dateSize: 17, venueSize: 15,
-    familyParentsSize: 12, familyNameSize: 19,
-    accountSize: 11,
+    dateSize: 17, venueSize: 15, familyParentsSize: 12, accountSize: 11,
     qrMarginX: 0.038, qrMarginY: 0.036, qrGuideY: 0.885, qrGuideSize: 9,
     modes: {
-      plain: { greetingY: 0.07, familyParentsY: 0.48, familyNameY: 0.535, accountY: 0.65, dateY: 0.8, venueY: 0.875, mapTop: 0, mapBottom: 0 },
-      qrOnly: { greetingY: 0.07, familyParentsY: 0.46, familyNameY: 0.515, accountY: 0.65, dateY: 0.72, venueY: 0.785, mapTop: 0, mapBottom: 0 },
-      accountOnly: { greetingY: 0.07, familyParentsY: 0.44, familyNameY: 0.495, accountY: 0.65, dateY: 0.82, venueY: 0.89, mapTop: 0, mapBottom: 0 },
-      qrAccount: { greetingY: 0.07, familyParentsY: 0.55, familyNameY: 0.6, accountY: 0.73, dateY: 0.4, venueY: 0.455, mapTop: 0, mapBottom: 0 },
-      map: { greetingY: 0.06, familyParentsY: 0.28, familyNameY: 0.335, accountY: 0.74, dateY: 0.82, venueY: 0.89, mapTop: 0.4, mapBottom: 0.76 },
-      mapQr: { greetingY: 0.06, familyParentsY: 0.26, familyNameY: 0.315, accountY: 0.72, dateY: 0.71, venueY: 0.755, mapTop: 0.38, mapBottom: 0.68 },
+      plain: { greetingY: 0.07, greetingSize: 15, familyParentsY: 0.48, familyNameY: 0.535, familyNameSize: 19, accountY: 0.65, dateY: 0.8, venueY: 0.875, mapTop: 0, mapBottom: 0 },
+      accountOnly: { greetingY: 0.07, greetingSize: 15, familyParentsY: 0.44, familyNameY: 0.495, familyNameSize: 19, accountY: 0.65, dateY: 0.82, venueY: 0.89, mapTop: 0, mapBottom: 0 },
+      qrOnly: { greetingY: 0.07, greetingSize: 15, familyParentsY: 0.46, familyNameY: 0.515, familyNameSize: 19, accountY: 0.65, dateY: 0.72, venueY: 0.785, mapTop: 0, mapBottom: 0 },
+      accountQr: { greetingY: 0.07, greetingSize: 15, familyParentsY: 0.5, familyNameY: 0.55, familyNameSize: 19, accountY: 0.66, dateY: 0.4, venueY: 0.455, mapTop: 0, mapBottom: 0 },
+      map: { greetingY: 0.06, greetingSize: 14, familyParentsY: 0.28, familyNameY: 0.335, familyNameSize: 18, accountY: 0.42, dateY: 0.82, venueY: 0.89, mapTop: 0.4, mapBottom: 0.76 },
+      mapAccount: { greetingY: 0.05, greetingSize: 12, familyParentsY: 0.29, familyNameY: 0.335, familyNameSize: 17, accountY: 0.4, dateY: 0.83, venueY: 0.885, mapTop: 0.56, mapBottom: 0.79 },
+      mapQr: { greetingY: 0.05, greetingSize: 13, familyParentsY: 0.31, familyNameY: 0.355, familyNameSize: 17, accountY: 0.42, dateY: 0.73, venueY: 0.78, mapTop: 0.42, mapBottom: 0.7 },
+      mapAccountQr: { greetingY: 0.045, greetingSize: 11, familyParentsY: 0.25, familyNameY: 0.29, familyNameSize: 16, accountY: 0.35, dateY: 0.735, venueY: 0.785, mapTop: 0.54, mapBottom: 0.7 },
     },
   },
   portrait: {
-    greetingSize: 16,
-    dateSize: 17, venueSize: 16,
-    familyParentsSize: 13, familyNameSize: 21,
-    accountSize: 12,
+    dateSize: 17, venueSize: 16, familyParentsSize: 13, accountSize: 12,
     qrMarginX: 0.045, qrMarginY: 0.032, qrGuideY: 0.918, qrGuideSize: 10,
     modes: {
-      plain: { greetingY: 0.1, familyParentsY: 0.6, familyNameY: 0.65, accountY: 0.73, dateY: 0.87, venueY: 0.92, mapTop: 0, mapBottom: 0 },
-      qrOnly: { greetingY: 0.1, familyParentsY: 0.605, familyNameY: 0.655, accountY: 0.73, dateY: 0.8, venueY: 0.835, mapTop: 0, mapBottom: 0 },
-      accountOnly: { greetingY: 0.1, familyParentsY: 0.605, familyNameY: 0.655, accountY: 0.73, dateY: 0.88, venueY: 0.915, mapTop: 0, mapBottom: 0 },
-      qrAccount: { greetingY: 0.1, familyParentsY: 0.645, familyNameY: 0.69, accountY: 0.8, dateY: 0.5, venueY: 0.545, mapTop: 0, mapBottom: 0 },
-      map: { greetingY: 0.085, familyParentsY: 0.33, familyNameY: 0.375, accountY: 0.8, dateY: 0.87, venueY: 0.915, mapTop: 0.43, mapBottom: 0.82 },
-      mapQr: { greetingY: 0.085, familyParentsY: 0.3, familyNameY: 0.345, accountY: 0.76, dateY: 0.79, venueY: 0.823, mapTop: 0.4, mapBottom: 0.72 },
+      plain: { greetingY: 0.1, greetingSize: 16, familyParentsY: 0.6, familyNameY: 0.65, familyNameSize: 21, accountY: 0.73, dateY: 0.87, venueY: 0.92, mapTop: 0, mapBottom: 0 },
+      accountOnly: { greetingY: 0.1, greetingSize: 16, familyParentsY: 0.605, familyNameY: 0.655, familyNameSize: 21, accountY: 0.73, dateY: 0.88, venueY: 0.915, mapTop: 0, mapBottom: 0 },
+      qrOnly: { greetingY: 0.1, greetingSize: 16, familyParentsY: 0.605, familyNameY: 0.655, familyNameSize: 21, accountY: 0.73, dateY: 0.8, venueY: 0.835, mapTop: 0, mapBottom: 0 },
+      accountQr: { greetingY: 0.1, greetingSize: 16, familyParentsY: 0.63, familyNameY: 0.675, familyNameSize: 21, accountY: 0.74, dateY: 0.5, venueY: 0.545, mapTop: 0, mapBottom: 0 },
+      map: { greetingY: 0.085, greetingSize: 15, familyParentsY: 0.33, familyNameY: 0.375, familyNameSize: 20, accountY: 0.45, dateY: 0.87, venueY: 0.915, mapTop: 0.43, mapBottom: 0.82 },
+      mapAccount: { greetingY: 0.06, greetingSize: 14, familyParentsY: 0.27, familyNameY: 0.315, familyNameSize: 19, accountY: 0.39, dateY: 0.845, venueY: 0.885, mapTop: 0.52, mapBottom: 0.79 },
+      mapQr: { greetingY: 0.07, greetingSize: 14, familyParentsY: 0.28, familyNameY: 0.325, familyNameSize: 19, accountY: 0.4, dateY: 0.765, venueY: 0.8, mapTop: 0.4, mapBottom: 0.72 },
+      mapAccountQr: { greetingY: 0.055, greetingSize: 13, familyParentsY: 0.24, familyNameY: 0.285, familyNameSize: 18, accountY: 0.35, dateY: 0.775, venueY: 0.812, mapTop: 0.46, mapBottom: 0.735 },
     },
   },
 };
 
 function backAnchors(orientation: Orientation, opts: LayoutOptions): BackAnchors {
   const { modes } = BACK[orientation];
-  if (opts.hasMap) return opts.hasQr ? modes.mapQr : modes.map;
-  if (opts.hasQr) return opts.hasAccount ? modes.qrAccount : modes.qrOnly;
+  if (opts.hasMap) {
+    if (opts.hasAccount && opts.hasQr) return modes.mapAccountQr;
+    if (opts.hasAccount) return modes.mapAccount;
+    if (opts.hasQr) return modes.mapQr;
+    return modes.map;
+  }
+  if (opts.hasAccount && opts.hasQr) return modes.accountQr;
+  if (opts.hasQr) return modes.qrOnly;
   if (opts.hasAccount) return modes.accountOnly;
   return modes.plain;
 }
@@ -528,7 +527,7 @@ function buildSinglePanelBack(opts: LayoutOptions): PageState {
 
   const icons: PlacedIcon[] = [];
   const texts: TextField[] = [
-    makeText('message', '인사말', opts.greeting || DEFAULT_GREETING, { x, y: h * anchors.greetingY, width: fieldWidth }, cfg.greetingSize, 1),
+    makeText('message', '인사말', opts.greeting || DEFAULT_GREETING, { x, y: h * anchors.greetingY, width: fieldWidth }, anchors.greetingSize, 1),
     makeText('date', '날짜', opts.date, { x, y: h * anchors.dateY, width: fieldWidth }, cfg.dateSize, 2),
     makeText('venue', '장소', opts.venue, { x, y: h * anchors.venueY, width: fieldWidth }, cfg.venueSize, 3),
   ];
@@ -544,7 +543,7 @@ function buildSinglePanelBack(opts: LayoutOptions): PageState {
         h * anchors.familyParentsY,
         cfg.familyParentsSize,
         h * anchors.familyNameY,
-        cfg.familyNameSize,
+        anchors.familyNameSize,
         z,
       ),
     );
