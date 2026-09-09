@@ -18,5 +18,15 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["api", "src/lib", "src/types.ts", "src/data/orientation.ts", "src/data/templates.ts"]
+  "include": [
+    "api",
+    "src/types.ts",
+    "src/lib/layoutGenerator.ts",
+    "src/lib/calendar.ts",
+    "src/lib/svgExport.ts",
+    "src/lib/layering.ts",
+    "src/data/orientation.ts",
+    "src/data/templates.ts",
+    "src/data/calendarDigits.ts"
+  ]
 }

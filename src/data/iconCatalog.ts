@@ -341,127 +341,28 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; items: Ar
   },
   {
     "folder": "flower",
-    "category": "꽃 · 왕관",
+    "category": "꾸미기",
     "items": [
       {
-        "slug": "flower-02",
-        "label": "꽃 살구",
-        "width": 400,
-        "height": 362
-      },
-      {
-        "slug": "flower-03",
-        "label": "꽃갈색",
-        "width": 400,
-        "height": 362
-      },
-      {
         "slug": "flower-04",
-        "label": "꽃검정",
+        "label": "꽃",
         "width": 400,
-        "height": 362
-      },
-      {
-        "slug": "flower-05",
-        "label": "꽃노랑",
-        "width": 400,
-        "height": 362
-      },
-      {
-        "slug": "flower-06",
-        "label": "꽃민트",
-        "width": 400,
-        "height": 362
-      },
-      {
-        "slug": "flower-07",
-        "label": "꽃보라",
-        "width": 400,
-        "height": 362
-      },
-      {
-        "slug": "flower-08",
-        "label": "꽃연두",
-        "width": 400,
-        "height": 362
-      },
-      {
-        "slug": "flower-09",
-        "label": "꽃연민트",
-        "width": 400,
-        "height": 362
-      },
-      {
-        "slug": "flower-10",
-        "label": "꽃연핑",
-        "width": 400,
-        "height": 362
-      },
-      {
-        "slug": "flower-11",
-        "label": "꽃핑크",
-        "width": 400,
-        "height": 362
-      },
-      {
-        "slug": "flower-12",
-        "label": "꽃하늘",
-        "width": 400,
-        "height": 362
-      },
-      {
-        "slug": "flower-13",
-        "label": "꽃화이트",
-        "width": 400,
-        "height": 362
-      },
-      {
-        "slug": "flower-14",
-        "label": "왕관 하늘",
-        "width": 400,
-        "height": 359
+        "height": 362,
+        "recolorable": true
       },
       {
         "slug": "flower-15",
-        "label": "왕관 검정",
+        "label": "왕관",
         "width": 400,
-        "height": 359
-      },
-      {
-        "slug": "flower-16",
-        "label": "왕관 노랑",
-        "width": 400,
-        "height": 359
-      },
-      {
-        "slug": "flower-17",
-        "label": "왕관 화이트",
-        "width": 400,
-        "height": 359
-      },
-      {
-        "slug": "flower-18",
-        "label": "왕관2 노랑",
-        "width": 351,
-        "height": 400
+        "height": 359,
+        "recolorable": true
       },
       {
         "slug": "flower-19",
-        "label": "왕관2 검정",
+        "label": "왕관2",
         "width": 351,
-        "height": 400
-      },
-      {
-        "slug": "flower-20",
-        "label": "왕관2 핑크",
-        "width": 351,
-        "height": 400
-      },
-      {
-        "slug": "flower-21",
-        "label": "왕관2 화이트",
-        "width": 351,
-        "height": 400
+        "height": 400,
+        "recolorable": true
       }
     ]
   },
@@ -651,7 +552,7 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; items: Ar
       },
       {
         "slug": "animal-06",
-        "label": "기린",
+        "label": "사슴",
         "width": 346,
         "height": 400
       },
@@ -1098,6 +999,564 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; items: Ar
         "label": "텐트",
         "width": 400,
         "height": 232
+      }
+    ]
+  },
+  {
+    "folder": "crayon",
+    "category": "크레용",
+    "items": [
+      {
+        "slug": "crayon-01",
+        "label": "해",
+        "width": 213,
+        "height": 222
+      },
+      {
+        "slug": "crayon-02",
+        "label": "자는 달",
+        "width": 168,
+        "height": 186
+      },
+      {
+        "slug": "crayon-03",
+        "label": "별똥별",
+        "width": 226,
+        "height": 202
+      },
+      {
+        "slug": "crayon-04",
+        "label": "로켓",
+        "width": 159,
+        "height": 239
+      },
+      {
+        "slug": "crayon-05",
+        "label": "토성",
+        "width": 233,
+        "height": 174
+      },
+      {
+        "slug": "crayon-06",
+        "label": "비구름",
+        "width": 190,
+        "height": 198
+      },
+      {
+        "slug": "crayon-07",
+        "label": "무지개",
+        "width": 213,
+        "height": 183
+      },
+      {
+        "slug": "crayon-08",
+        "label": "나비",
+        "width": 191,
+        "height": 216
+      },
+      {
+        "slug": "crayon-09",
+        "label": "꿀벌",
+        "width": 194,
+        "height": 219
+      },
+      {
+        "slug": "crayon-10",
+        "label": "무당벌레",
+        "width": 191,
+        "height": 184
+      },
+      {
+        "slug": "crayon-11",
+        "label": "고양이",
+        "width": 224,
+        "height": 220
+      },
+      {
+        "slug": "crayon-12",
+        "label": "강아지",
+        "width": 194,
+        "height": 203
+      },
+      {
+        "slug": "crayon-13",
+        "label": "새",
+        "width": 213,
+        "height": 178
+      },
+      {
+        "slug": "crayon-14",
+        "label": "거북이",
+        "width": 233,
+        "height": 170
+      },
+      {
+        "slug": "crayon-15",
+        "label": "물고기",
+        "width": 207,
+        "height": 182
+      },
+      {
+        "slug": "crayon-16",
+        "label": "데이지",
+        "width": 181,
+        "height": 231
+      },
+      {
+        "slug": "crayon-17",
+        "label": "튤립",
+        "width": 188,
+        "height": 205
+      },
+      {
+        "slug": "crayon-18",
+        "label": "과일나무",
+        "width": 193,
+        "height": 223
+      },
+      {
+        "slug": "crayon-19",
+        "label": "사과",
+        "width": 184,
+        "height": 185
+      },
+      {
+        "slug": "crayon-20",
+        "label": "딸기",
+        "width": 172,
+        "height": 196
+      },
+      {
+        "slug": "crayon-21",
+        "label": "버섯",
+        "width": 185,
+        "height": 173
+      },
+      {
+        "slug": "crayon-22",
+        "label": "나뭇잎",
+        "width": 172,
+        "height": 185
+      },
+      {
+        "slug": "crayon-23",
+        "label": "집",
+        "width": 197,
+        "height": 187
+      },
+      {
+        "slug": "crayon-24",
+        "label": "자동차",
+        "width": 204,
+        "height": 154
+      },
+      {
+        "slug": "crayon-25",
+        "label": "돛단배",
+        "width": 192,
+        "height": 210
+      },
+      {
+        "slug": "crayon-26",
+        "label": "아이스크림",
+        "width": 122,
+        "height": 216
+      },
+      {
+        "slug": "crayon-27",
+        "label": "연",
+        "width": 189,
+        "height": 218
+      },
+      {
+        "slug": "crayon-28",
+        "label": "풍선",
+        "width": 145,
+        "height": 205
+      },
+      {
+        "slug": "crayon-29",
+        "label": "물뿌리개",
+        "width": 233,
+        "height": 163
+      },
+      {
+        "slug": "crayon-30",
+        "label": "달팽이",
+        "width": 198,
+        "height": 177
+      }
+    ]
+  },
+  {
+    "folder": "retro",
+    "category": "추억의 낙서",
+    "items": [
+      {
+        "slug": "retro-01",
+        "label": "다마고찌",
+        "width": 177,
+        "height": 210
+      },
+      {
+        "slug": "retro-02",
+        "label": "국어교과서",
+        "width": 187,
+        "height": 206
+      },
+      {
+        "slug": "retro-03",
+        "label": "잠자리채",
+        "width": 197,
+        "height": 218
+      },
+      {
+        "slug": "retro-04",
+        "label": "달고나",
+        "width": 181,
+        "height": 174
+      },
+      {
+        "slug": "retro-05",
+        "label": "공깃돌",
+        "width": 186,
+        "height": 190
+      },
+      {
+        "slug": "retro-06",
+        "label": "구슬주머니",
+        "width": 199,
+        "height": 201
+      },
+      {
+        "slug": "retro-07",
+        "label": "종이딱지",
+        "width": 187,
+        "height": 184
+      },
+      {
+        "slug": "retro-08",
+        "label": "지우개청소기",
+        "width": 212,
+        "height": 158
+      },
+      {
+        "slug": "retro-09",
+        "label": "멀티펜",
+        "width": 192,
+        "height": 199
+      },
+      {
+        "slug": "retro-10",
+        "label": "향기지우개",
+        "width": 193,
+        "height": 158
+      },
+      {
+        "slug": "retro-11",
+        "label": "자물쇠일기장",
+        "width": 182,
+        "height": 204
+      },
+      {
+        "slug": "retro-12",
+        "label": "자석필통",
+        "width": 221,
+        "height": 166
+      },
+      {
+        "slug": "retro-13",
+        "label": "슬랩팔찌",
+        "width": 173,
+        "height": 173
+      },
+      {
+        "slug": "retro-14",
+        "label": "롤러스케이트",
+        "width": 189,
+        "height": 200
+      },
+      {
+        "slug": "retro-15",
+        "label": "줄무늬실내화",
+        "width": 212,
+        "height": 174
+      },
+      {
+        "slug": "retro-16",
+        "label": "리코더",
+        "width": 189,
+        "height": 208
+      },
+      {
+        "slug": "retro-17",
+        "label": "물방울링게임기",
+        "width": 173,
+        "height": 208
+      },
+      {
+        "slug": "retro-18",
+        "label": "요요",
+        "width": 187,
+        "height": 181
+      },
+      {
+        "slug": "retro-19",
+        "label": "비눗방울",
+        "width": 175,
+        "height": 200
+      },
+      {
+        "slug": "retro-20",
+        "label": "종이인형",
+        "width": 223,
+        "height": 210
+      },
+      {
+        "slug": "retro-21",
+        "label": "카세트플레이어",
+        "width": 209,
+        "height": 202
+      },
+      {
+        "slug": "retro-22",
+        "label": "플로피디스크",
+        "width": 177,
+        "height": 177
+      },
+      {
+        "slug": "retro-23",
+        "label": "빨대과자",
+        "width": 192,
+        "height": 219
+      },
+      {
+        "slug": "retro-24",
+        "label": "쫀드기",
+        "width": 191,
+        "height": 220
+      },
+      {
+        "slug": "retro-25",
+        "label": "떡꼬치",
+        "width": 179,
+        "height": 209
+      },
+      {
+        "slug": "retro-26",
+        "label": "컵떡볶이",
+        "width": 183,
+        "height": 214
+      },
+      {
+        "slug": "retro-27",
+        "label": "병우유",
+        "width": 106,
+        "height": 212
+      },
+      {
+        "slug": "retro-28",
+        "label": "급식판",
+        "width": 224,
+        "height": 180
+      },
+      {
+        "slug": "retro-29",
+        "label": "엠피쓰리플레이어",
+        "width": 196,
+        "height": 187
+      },
+      {
+        "slug": "retro-30",
+        "label": "폴더폰",
+        "width": 163,
+        "height": 223
+      }
+    ]
+  },
+  {
+    "folder": "doodle",
+    "category": "아이 낙서",
+    "items": [
+      {
+        "slug": "doodle-01",
+        "label": "춤추는아이",
+        "width": 209,
+        "height": 240
+      },
+      {
+        "slug": "doodle-02",
+        "label": "달리는아이",
+        "width": 191,
+        "height": 233
+      },
+      {
+        "slug": "doodle-03",
+        "label": "꼬마요리사",
+        "width": 169,
+        "height": 239
+      },
+      {
+        "slug": "doodle-04",
+        "label": "킥보드타는아이",
+        "width": 173,
+        "height": 239
+      },
+      {
+        "slug": "doodle-05",
+        "label": "책읽는아이",
+        "width": 141,
+        "height": 200
+      },
+      {
+        "slug": "doodle-06",
+        "label": "줄넘기하는아이",
+        "width": 192,
+        "height": 240
+      },
+      {
+        "slug": "doodle-07",
+        "label": "생일케이크",
+        "width": 165,
+        "height": 193
+      },
+      {
+        "slug": "doodle-08",
+        "label": "초코칩쿠키",
+        "width": 173,
+        "height": 165
+      },
+      {
+        "slug": "doodle-09",
+        "label": "샌드위치",
+        "width": 202,
+        "height": 160
+      },
+      {
+        "slug": "doodle-10",
+        "label": "햄버거",
+        "width": 176,
+        "height": 161
+      },
+      {
+        "slug": "doodle-11",
+        "label": "포장사탕",
+        "width": 221,
+        "height": 170
+      },
+      {
+        "slug": "doodle-12",
+        "label": "막대사탕",
+        "width": 131,
+        "height": 195
+      },
+      {
+        "slug": "doodle-13",
+        "label": "팝콘",
+        "width": 157,
+        "height": 192
+      },
+      {
+        "slug": "doodle-14",
+        "label": "도넛",
+        "width": 183,
+        "height": 160
+      },
+      {
+        "slug": "doodle-15",
+        "label": "주스팩",
+        "width": 137,
+        "height": 197
+      },
+      {
+        "slug": "doodle-16",
+        "label": "왕관",
+        "width": 175,
+        "height": 155
+      },
+      {
+        "slug": "doodle-17",
+        "label": "장난감북",
+        "width": 162,
+        "height": 192
+      },
+      {
+        "slug": "doodle-18",
+        "label": "팽이",
+        "width": 157,
+        "height": 192
+      },
+      {
+        "slug": "doodle-19",
+        "label": "쌓기블록",
+        "width": 187,
+        "height": 170
+      },
+      {
+        "slug": "doodle-20",
+        "label": "곰인형",
+        "width": 185,
+        "height": 188
+      },
+      {
+        "slug": "doodle-21",
+        "label": "공",
+        "width": 170,
+        "height": 162
+      },
+      {
+        "slug": "doodle-22",
+        "label": "모래놀이세트",
+        "width": 187,
+        "height": 184
+      },
+      {
+        "slug": "doodle-23",
+        "label": "미끄럼틀",
+        "width": 214,
+        "height": 173
+      },
+      {
+        "slug": "doodle-24",
+        "label": "그네",
+        "width": 192,
+        "height": 176
+      },
+      {
+        "slug": "doodle-25",
+        "label": "책가방",
+        "width": 183,
+        "height": 195
+      },
+      {
+        "slug": "doodle-26",
+        "label": "크레파스",
+        "width": 179,
+        "height": 188
+      },
+      {
+        "slug": "doodle-27",
+        "label": "가위",
+        "width": 198,
+        "height": 159
+      },
+      {
+        "slug": "doodle-28",
+        "label": "풀",
+        "width": 103,
+        "height": 195
+      },
+      {
+        "slug": "doodle-29",
+        "label": "물감팔레트",
+        "width": 214,
+        "height": 190
+      },
+      {
+        "slug": "doodle-30",
+        "label": "알람시계",
+        "width": 156,
+        "height": 193
       }
     ]
   }

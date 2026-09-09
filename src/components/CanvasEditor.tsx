@@ -3,6 +3,7 @@ import { Stage, Layer, Line, Rect, Text as KonvaText, Image as KonvaImage, Trans
 import type Konva from 'konva';
 import useImage from 'use-image';
 import { loadFonts } from '../data/fonts';
+import { tintImage } from '../lib/tint';
 import { getIconDefaultColor, getIconSrc, isLibraryIcon, isRecolorableIcon } from '../data/icons';
 import { sortByZIndex } from '../lib/layering';
 import type { PlacedIcon, TextField, Template, SelectedElement } from '../types';
@@ -13,8 +14,9 @@ interface Props {
   template: Template;
   icons: PlacedIcon[];
   texts: TextField[];
-  selected: SelectedElement;
-  onSelect: (sel: SelectedElement) => void;
+  /** 여러 개를 함께 잡을 수 있다. 비어 있으면 아무것도 선택되지 않은 상태. */
+  selection: SelectedElement[];
+  onSelectionChange: (selection: SelectedElement[]) => void;
   onIconChange: (uid: string, attrs: Partial<PlacedIcon>) => void;
   onTextChange: (id: string, attrs: Partial<TextField>) => void;
   onDelete: () => void;
@@ -31,21 +33,43 @@ function IconNode({
   interactive,
   onSelect,
   onChange,
+  onDragStart,
   onDragMove,
   onDragStop,
 }: {
   icon: PlacedIcon;
   isSelected: boolean;
   interactive: boolean;
-  onSelect: () => void;
+  onSelect: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
   onChange: (attrs: Partial<PlacedIcon>) => void;
+  onDragStart: (e: Konva.KonvaEventObject<DragEvent>) => void;
   onDragMove: (e: Konva.KonvaEventObject<DragEvent>) => void;
   onDragStop: () => void;
 }) {
   const isPhoto = !isLibraryIcon(icon.iconId);
-  const effectiveSrc = isPhoto ? icon.src : (getIconSrc(icon.iconId, icon.color) ?? icon.src);
+  const baseSrc = isPhoto ? icon.src : (getIconSrc(icon.iconId) ?? icon.src);
+  const [tinted, setTinted] = useState<string | null>(null);
+
+  // 색을 고른 단색 아이콘은 칠한 그림으로 바꿔 그린다. 내보내기는 캔버스에 올라간 이미지를
+  // 그대로 읽으므로 인쇄물과 SVG에도 같은 색이 나간다.
+  useEffect(() => {
+    if (!icon.color || !isRecolorableIcon(icon.iconId)) {
+      setTinted(null);
+      return;
+    }
+    let cancelled = false;
+    tintImage(baseSrc, icon.color)
+      .then((uri) => {
+        if (!cancelled) setTinted(uri);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [icon.color, icon.iconId, baseSrc]);
+
   // crossOrigin so externally-hosted customer photos don't taint the canvas on export
-  const [image] = useImage(effectiveSrc, 'anonymous');
+  const [image] = useImage(tinted ?? baseSrc, 'anonymous');
   return (
     <KonvaImage
       id={icon.uid}
@@ -59,6 +83,7 @@ function IconNode({
       draggable={interactive}
       onClick={interactive ? onSelect : undefined}
       onTap={interactive ? onSelect : undefined}
+      onDragStart={onDragStart}
       onDragMove={onDragMove}
       onDragEnd={(e) => {
         onDragStop();
@@ -184,6 +209,7 @@ function TextNode({
   onSelect,
   onChange,
   onStartEdit,
+  onDragStart,
   onDragMove,
   onDragStop,
 }: {
@@ -191,9 +217,10 @@ function TextNode({
   isSelected: boolean;
   isEditing: boolean;
   interactive: boolean;
-  onSelect: () => void;
+  onSelect: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
   onChange: (attrs: Partial<TextField>) => void;
   onStartEdit: () => void;
+  onDragStart: (e: Konva.KonvaEventObject<DragEvent>) => void;
   onDragMove: (e: Konva.KonvaEventObject<DragEvent>) => void;
   onDragStop: () => void;
 }) {
@@ -263,6 +290,7 @@ function TextNode({
       onTap={interactive ? onSelect : undefined}
       onDblClick={interactive ? onStartEdit : undefined}
       onDblTap={interactive ? onStartEdit : undefined}
+      onDragStart={onDragStart}
       onDragMove={onDragMove}
       onDragEnd={(e) => {
         onDragStop();
@@ -301,8 +329,8 @@ export default function CanvasEditor({
   template,
   icons,
   texts,
-  selected,
-  onSelect,
+  selection,
+  onSelectionChange,
   onIconChange,
   onTextChange,
   onDelete,
@@ -312,6 +340,26 @@ export default function CanvasEditor({
 }: Props) {
   const trRef = useRef<Konva.Transformer>(null);
   const [selectionRect, setSelectionRect] = useState<SelectionRect | null>(null);
+  /** 빈 곳에서 끌어 만드는 선택 사각형. 놓는 순간 안에 걸친 요소를 전부 잡는다. */
+  const [marquee, setMarquee] = useState<SelectionRect | null>(null);
+  const marqueeStart = useRef<{ x: number; y: number } | null>(null);
+  /** 여러 개를 함께 끌 때, 끌리는 요소의 이동량을 나머지에 그대로 옮기기 위한 기준점. */
+  const dragOrigin = useRef<{ x: number; y: number; others: Array<{ node: Konva.Node; x: number; y: number }> } | null>(null);
+
+  const selected = selection.length === 1 ? selection[0] : null;
+  const idOf = (sel: SelectedElement) => (sel ? (sel.type === 'icon' ? sel.uid : `text:${sel.id}`) : '');
+  const selectedIds = new Set(selection.map(idOf));
+  const isPicked = (sel: SelectedElement) => selectedIds.has(idOf(sel));
+
+  /** 보조키를 누른 채 누르면 선택에 더하거나 빼고, 그냥 누르면 그것만 남긴다. */
+  function pick(sel: SelectedElement, evt: MouseEvent | TouchEvent) {
+    const additive = 'ctrlKey' in evt && (evt.ctrlKey || evt.metaKey || evt.shiftKey);
+    if (!additive) {
+      onSelectionChange([sel]);
+      return;
+    }
+    onSelectionChange(isPicked(sel) ? selection.filter((s) => idOf(s) !== idOf(sel)) : [...selection, sel]);
+  }
   const [croppingUid, setCroppingUid] = useState<string | null>(null);
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState('');
@@ -325,6 +373,20 @@ export default function CanvasEditor({
    * guide while it's held there — centring by eye alone is the fiddliest part of the editor.
    * Uses the node's rendered box so rotated elements snap by what you actually see.
    */
+  function handleDragStart(e: Konva.KonvaEventObject<DragEvent>) {
+    const node = e.target;
+    const stage = stageRef.current;
+    if (!stage || selection.length < 2) {
+      dragOrigin.current = null;
+      return;
+    }
+    const others = selection
+      .map((sel) => stage.findOne('#' + (sel!.type === 'icon' ? sel!.uid : sel!.id)))
+      .filter((n): n is Konva.Node => !!n && n !== node)
+      .map((n) => ({ node: n, x: n.x(), y: n.y() }));
+    dragOrigin.current = { x: node.x(), y: node.y(), others };
+  }
+
   function handleDragMove(e: Konva.KonvaEventObject<DragEvent>) {
     const node = e.target;
     // Konva can emit one more dragmove on the frame after dragend; without this the guide it
@@ -340,10 +402,31 @@ export default function CanvasEditor({
     if (vertical) node.x(node.x() + dx);
     if (horizontal) node.y(node.y() + dy);
     setGuides((prev) => (prev.vertical === vertical && prev.horizontal === horizontal ? prev : { vertical, horizontal }));
+
+    // 함께 잡힌 나머지도 같은 만큼 옮겨서 서로의 배치가 흐트러지지 않게 한다
+    const origin = dragOrigin.current;
+    if (origin) {
+      const shiftX = node.x() - origin.x;
+      const shiftY = node.y() - origin.y;
+      for (const other of origin.others) {
+        other.node.x(other.x + shiftX);
+        other.node.y(other.y + shiftY);
+      }
+    }
   }
 
   function handleDragStop() {
     setGuides((prev) => (prev.vertical || prev.horizontal ? { vertical: false, horizontal: false } : prev));
+    // 같이 끌려온 요소들의 최종 위치를 각자 저장한다
+    const origin = dragOrigin.current;
+    if (origin) {
+      for (const other of origin.others) {
+        const id = other.node.id();
+        if (icons.some((i) => i.uid === id)) onIconChange(id, { x: other.node.x(), y: other.node.y() });
+        else onTextChange(id, { x: other.node.x(), y: other.node.y() });
+      }
+      dragOrigin.current = null;
+    }
   }
 
   // shrink the card to fit narrow (mobile) screens, keeping the canvas at full resolution
@@ -376,23 +459,29 @@ export default function CanvasEditor({
     const tr = trRef.current;
     const stage = stageRef.current;
     if (!tr || !stage) return;
-    if (!interactive || !selected || croppingUid || editingTextId) {
+    if (!interactive || selection.length === 0 || croppingUid || editingTextId) {
       tr.nodes([]);
       tr.getLayer()?.batchDraw();
-      if (!selected) setSelectionRect(null);
+      if (selection.length === 0) setSelectionRect(null);
       return;
     }
-    const id = selected.type === 'icon' ? selected.uid : selected.id;
-    const node = stage.findOne('#' + id);
-    if (node) {
-      tr.nodes([node]);
-      setSelectionRect(node.getClientRect({ relativeTo: stage }));
-    } else {
-      tr.nodes([]);
-      setSelectionRect(null);
-    }
+    const nodes = selection
+      .map((sel) => stage.findOne('#' + (sel!.type === 'icon' ? sel!.uid : sel!.id)))
+      .filter((node): node is Konva.Node => !!node);
+    tr.nodes(nodes);
+    // 떠 있는 버튼을 붙일 자리 — 선택된 것들을 모두 감싸는 사각형
+    const boxes = nodes.map((node) => node.getClientRect({ relativeTo: stage }));
+    setSelectionRect(
+      boxes.length
+        ? boxes.reduce((acc, b) => {
+            const x = Math.min(acc.x, b.x);
+            const y = Math.min(acc.y, b.y);
+            return { x, y, width: Math.max(acc.x + acc.width, b.x + b.width) - x, height: Math.max(acc.y + acc.height, b.y + b.height) - y };
+          })
+        : null,
+    );
     tr.getLayer()?.batchDraw();
-  }, [selected, icons, texts, stageRef, croppingUid, editingTextId, interactive]);
+  }, [selection, icons, texts, stageRef, croppingUid, editingTextId, interactive]);
 
   useEffect(() => {
     if (editingTextId && textareaRef.current) {
@@ -403,7 +492,7 @@ export default function CanvasEditor({
 
   function startEditingText(field: TextField) {
     setCroppingUid(null);
-    onSelect({ type: 'text', id: field.id });
+    onSelectionChange([{ type: 'text', id: field.id }]);
     setEditingTextId(field.id);
     setEditingValue(field.text);
   }
@@ -417,7 +506,7 @@ export default function CanvasEditor({
 
   function startCropping(icon: PlacedIcon) {
     setEditingTextId(null);
-    onSelect({ type: 'icon', uid: icon.uid });
+    onSelectionChange([{ type: 'icon', uid: icon.uid }]);
     setCroppingUid(icon.uid);
   }
 
@@ -445,14 +534,47 @@ export default function CanvasEditor({
         width={width}
         height={height}
         onMouseDown={(e) => {
-          if (interactive && e.target === e.target.getStage()) {
-            onSelect(null);
-            setCroppingUid(null);
-          }
+          if (!interactive || e.target !== e.target.getStage()) return;
+          onSelectionChange([]);
+          setCroppingUid(null);
+          const pos = e.target.getStage()?.getPointerPosition();
+          if (pos) marqueeStart.current = { x: pos.x, y: pos.y };
+        }}
+        onMouseMove={(e) => {
+          const start = marqueeStart.current;
+          if (!start) return;
+          const pos = e.target.getStage()?.getPointerPosition();
+          if (!pos) return;
+          setMarquee({
+            x: Math.min(start.x, pos.x),
+            y: Math.min(start.y, pos.y),
+            width: Math.abs(pos.x - start.x),
+            height: Math.abs(pos.y - start.y),
+          });
+        }}
+        onMouseUp={() => {
+          const box = marquee;
+          marqueeStart.current = null;
+          setMarquee(null);
+          // 손이 조금 흔들린 정도는 그냥 빈 곳 클릭으로 본다
+          if (!box || box.width < 5 || box.height < 5) return;
+          const stage = stageRef.current;
+          if (!stage) return;
+          const overlaps = (id: string) => {
+            const node = stage.findOne('#' + id);
+            if (!node) return false;
+            const r = node.getClientRect({ relativeTo: stage });
+            return !(r.x > box.x + box.width || r.x + r.width < box.x || r.y > box.y + box.height || r.y + r.height < box.y);
+          };
+          const hits: SelectedElement[] = [
+            ...icons.filter((i) => overlaps(i.uid)).map((i) => ({ type: 'icon' as const, uid: i.uid })),
+            ...texts.filter((t) => t.text.trim() && overlaps(t.id)).map((t) => ({ type: 'text' as const, id: t.id })),
+          ];
+          if (hits.length) onSelectionChange(hits);
         }}
         onTouchStart={(e) => {
           if (interactive && e.target === e.target.getStage()) {
-            onSelect(null);
+            onSelectionChange([]);
             setCroppingUid(null);
           }
         }}
@@ -467,10 +589,11 @@ export default function CanvasEditor({
                 <IconNode
                   key={item.data.uid}
                   icon={item.data}
-                  isSelected={selected?.type === 'icon' && selected.uid === item.data.uid}
+                  isSelected={isPicked({ type: 'icon', uid: item.data.uid })}
                   interactive={interactive}
-                  onSelect={() => onSelect({ type: 'icon', uid: item.data.uid })}
+                  onSelect={(e) => pick({ type: 'icon', uid: item.data.uid }, e.evt)}
                   onChange={(attrs) => onIconChange(item.data.uid, attrs)}
+                  onDragStart={handleDragStart}
                   onDragMove={handleDragMove}
                   onDragStop={handleDragStop}
                 />
@@ -480,17 +603,30 @@ export default function CanvasEditor({
               <TextNode
                 key={item.data.id}
                 field={item.data}
-                isSelected={selected?.type === 'text' && selected.id === item.data.id}
+                isSelected={isPicked({ type: 'text', id: item.data.id })}
                 isEditing={editingTextId === item.data.id}
                 interactive={interactive}
-                onSelect={() => onSelect({ type: 'text', id: item.data.id })}
+                onSelect={(e) => pick({ type: 'text', id: item.data.id }, e.evt)}
                 onChange={(attrs) => onTextChange(item.data.id, attrs)}
                 onStartEdit={() => startEditingText(item.data)}
+                onDragStart={handleDragStart}
                 onDragMove={handleDragMove}
                 onDragStop={handleDragStop}
               />
             );
           })}
+          {marquee && (
+            <Rect
+              x={marquee.x}
+              y={marquee.y}
+              width={marquee.width}
+              height={marquee.height}
+              fill="#aa3bff18"
+              stroke="#aa3bff"
+              strokeWidth={1}
+              listening={false}
+            />
+          )}
           {guides.vertical && (
             <Line points={[width / 2, 0, width / 2, height]} stroke="#ff3b9a" strokeWidth={1} dash={[5, 4]} listening={false} />
           )}

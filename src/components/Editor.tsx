@@ -80,7 +80,9 @@ export default function Editor({
 
   const template = resolveTemplate(activePage);
 
-  const [selected, setSelected] = useState<SelectedElement>(null);
+  /** 여러 개를 함께 잡을 수 있다. 스타일 패널처럼 하나만 다루는 UI는 selected로 좁혀 쓴다. */
+  const [selection, setSelection] = useState<SelectedElement[]>([]);
+  const selected = selection.length === 1 ? selection[0] : null;
   const [initialZ] = useState(() => maxZIndex(initialPages));
   const zCounter = useRef(initialZ);
   const stageRef = useRef<Konva.Stage | null>(null);
@@ -93,7 +95,7 @@ export default function Editor({
   }
 
   function handleSwitchSide(side: Side) {
-    setSelected(null);
+    setSelection([]);
     setActiveSide(side);
   }
 
@@ -118,7 +120,7 @@ export default function Editor({
       zIndex: ++zCounter.current,
     };
     updateActivePage((p) => ({ ...p, icons: [...p.icons, placed] }));
-    setSelected({ type: 'icon', uid });
+    setSelection([{ type: 'icon', uid }]);
   }
 
   function handleUploadPhoto(dataUrl: string) {
@@ -142,7 +144,7 @@ export default function Editor({
         zIndex: ++zCounter.current,
       };
       updateActivePage((p) => ({ ...p, icons: [...p.icons, placed] }));
-      setSelected({ type: 'icon', uid });
+      setSelection([{ type: 'icon', uid }]);
     };
     img.src = dataUrl;
   }
@@ -165,7 +167,7 @@ export default function Editor({
       zIndex: ++zCounter.current,
     };
     updateActivePage((p) => ({ ...p, texts: [...p.texts, field] }));
-    setSelected({ type: 'text', id });
+    setSelection([{ type: 'text', id }]);
   }
 
   function handleIconChange(uid: string, attrs: Partial<PlacedIcon>) {
@@ -177,17 +179,18 @@ export default function Editor({
   }
 
   function handleDelete() {
-    if (!selected) return;
-    if (selected.type === 'icon') {
-      updateActivePage((p) => ({ ...p, icons: p.icons.filter((i) => i.uid !== selected.uid) }));
-      setSelected(null);
-    } else if (selected.id.startsWith('custom-')) {
-      updateActivePage((p) => ({ ...p, texts: p.texts.filter((t) => t.id !== selected.id) }));
-      setSelected(null);
-    } else {
-      // generated slots are part of the layout; clear the content instead of removing the field
-      handleTextChange(selected.id, { text: '' });
-    }
+    if (selection.length === 0) return;
+    const iconIds = new Set(selection.filter((s) => s?.type === 'icon').map((s) => (s as { uid: string }).uid));
+    const textIds = new Set(selection.filter((s) => s?.type === 'text').map((s) => (s as { id: string }).id));
+    updateActivePage((p) => ({
+      ...p,
+      icons: p.icons.filter((i) => !iconIds.has(i.uid)),
+      // 자동 배치로 생긴 칸은 레이아웃의 일부라 지우지 않고 내용만 비운다
+      texts: p.texts
+        .filter((t) => !(textIds.has(t.id) && t.id.startsWith('custom-')))
+        .map((t) => (textIds.has(t.id) && !t.id.startsWith('custom-') ? { ...t, text: '' } : t)),
+    }));
+    setSelection([]);
   }
 
   /**
@@ -229,8 +232,7 @@ export default function Editor({
   }
 
   function handleReorder(dir: 'front' | 'back') {
-    if (!selected) return;
-    moveLayer(selected, dir);
+    for (const sel of selection) if (sel) moveLayer(sel, dir);
   }
 
   function handleTemplateChange(id: string) {
@@ -278,8 +280,14 @@ export default function Editor({
             <LayerPanel
               icons={activePage.icons}
               texts={activePage.texts}
-              selected={selected}
-              onSelect={setSelected}
+              selection={selection}
+              onSelect={(sel, additive) =>
+                setSelection((prev) => {
+                  if (!additive) return sel ? [sel] : [];
+                  const id = (s: SelectedElement) => (s ? (s.type === 'icon' ? s.uid : `text:${s.id}`) : '');
+                  return prev.some((p) => id(p) === id(sel)) ? prev.filter((p) => id(p) !== id(sel)) : [...prev, sel];
+                })
+              }
               onMove={moveLayer}
             />
           </aside>
@@ -291,12 +299,12 @@ export default function Editor({
             template={template}
             icons={activePage.icons}
             texts={activePage.texts}
-            selected={selected}
-            onSelect={setSelected}
+            selection={selection}
+            onSelectionChange={setSelection}
             onIconChange={handleIconChange}
             onTextChange={handleTextChange}
             onDelete={handleDelete}
-            onMoveLayer={(move) => selected && moveLayer(selected, move)}
+            onMoveLayer={(move) => selection.forEach((sel) => sel && moveLayer(sel, move))}
             stageRef={stageRef}
             interactive={!readOnly}
           />
@@ -315,7 +323,7 @@ export default function Editor({
               texts={activePage.texts}
               selected={selected}
               onChange={handleTextChange}
-              onSelect={setSelected}
+              onSelect={(sel) => setSelection(sel ? [sel] : [])}
               onAddText={handleAddText}
             />
           </aside>

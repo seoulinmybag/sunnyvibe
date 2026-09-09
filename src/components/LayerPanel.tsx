@@ -10,8 +10,9 @@ export type LayerTarget = { type: 'icon'; uid: string } | { type: 'text'; id: st
 interface Props {
   icons: PlacedIcon[];
   texts: TextField[];
-  selected: SelectedElement;
-  onSelect: (sel: SelectedElement) => void;
+  /** 함께 잡힌 것들. 목록에서도 전부 표시해야 무엇이 같이 움직일지 보인다. */
+  selection: SelectedElement[];
+  onSelect: (sel: SelectedElement, additive: boolean) => void;
   onMove: (target: LayerTarget, move: LayerMove) => void;
 }
 
@@ -34,25 +35,29 @@ function textPreview(field: TextField): string {
   return firstLine.length > 14 ? `${firstLine.slice(0, 14)}…` : firstLine;
 }
 
-export default function LayerPanel({ icons, texts, selected, onSelect, onMove }: Props) {
+export default function LayerPanel({ icons, texts, selection, onSelect, onMove }: Props) {
   // sortByZIndex is back-to-front; the list reads front-to-back like every other layer UI
   const items = sortByZIndex(icons, texts).reverse();
 
   return (
     <div className="panel">
       <h3 className="panel-title">레이어</h3>
-      <p className="hint layer-hint">목록 위에 있을수록 앞에 보여요. 화살표로 순서를 바꿀 수 있어요.</p>
+      <p className="hint layer-hint">
+        목록 위에 있을수록 앞에 보여요. 화살표로 순서를 바꾸고, ⌘(Ctrl)을 누른 채 누르면 여러 개를 함께 잡을 수 있어요.
+      </p>
       <ul className="layer-list">
         {items.map((item, i) => {
           const target: LayerTarget =
             item.kind === 'icon' ? { type: 'icon', uid: item.data.uid } : { type: 'text', id: item.data.id };
-          const isSelected =
-            item.kind === 'icon'
-              ? selected?.type === 'icon' && selected.uid === item.data.uid
-              : selected?.type === 'text' && selected.id === item.data.id;
+          const isSelected = selection.some((sel) =>
+            !sel ? false : sel.type === 'icon' ? sel.uid === (target as { uid?: string }).uid : sel.id === (target as { id?: string }).id,
+          );
           return (
             <li key={item.kind === 'icon' ? item.data.uid : `text-${item.data.id}`} className={'layer-row' + (isSelected ? ' layer-row-active' : '')}>
-              <button className="layer-pick" onClick={() => onSelect(target)}>
+              <button
+                className="layer-pick"
+                onClick={(e) => onSelect(target, e.ctrlKey || e.metaKey || e.shiftKey)}
+              >
                 {item.kind === 'icon' ? (
                   <img src={item.data.src} alt="" draggable={false} />
                 ) : (

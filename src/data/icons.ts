@@ -22,6 +22,8 @@ export interface ArtSpec {
   label: string;
   width: number;
   height: number;
+  /** 단색 실루엣이라 원하는 색으로 칠할 수 있는 아이콘 (꾸미기 테마). */
+  recolorable?: boolean;
 }
 
 function artIcon(folder: string, category: string, spec: ArtSpec): IconDef {
@@ -30,7 +32,8 @@ function artIcon(folder: string, category: string, spec: ArtSpec): IconDef {
     id: spec.slug,
     label: spec.label,
     category,
-    recolorable: false,
+    recolorable: spec.recolorable === true,
+    defaultColor: spec.recolorable ? '#c58ba0' : undefined,
     naturalWidth: spec.width,
     naturalHeight: spec.height,
     src,
