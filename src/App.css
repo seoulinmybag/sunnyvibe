@@ -940,3 +940,14 @@ button.secondary:disabled {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+.modal-actions button.danger {
+  background: #d94f4f;
+  border-color: #d94f4f;
+  color: #fff;
+}
+
+.admin-table-actions button.danger {
+  color: #d94f4f;
+  border-color: #e7b7b7;
+}

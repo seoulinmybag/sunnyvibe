@@ -12,11 +12,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { data: order, error } = await getSupabaseAdmin()
     .from('orders')
-    .select('id, customer_name, orientation, pages, status')
+    .select('id, customer_name, orientation, pages, status, deleted_at')
     .eq('id', orderId)
     .maybeSingle();
 
-  if (error || !order) {
+  if (error || !order || order.deleted_at) {
     res.status(404).json({ ok: false, error: '주문을 찾을 수 없어요' });
     return;
   }

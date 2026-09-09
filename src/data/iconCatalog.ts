@@ -1,4 +1,5 @@
-// 자동 생성 파일 — convert-icons2.mjs 가 만든다. 직접 고치지 말 것.
+// 처음엔 변환 스크립트가 만들었지만, 이후로는 손으로 관리한다.
+// 아이콘을 빼거나 이름을 바꿀 때는 여기와 src/assets/icons/ 의 파일을 같이 손봐야 한다.
 import type { ArtSpec } from './icons';
 
 export const ART_CATEGORIES: Array<{ folder: string; category: string; items: ArtSpec[] }> = [
@@ -343,12 +344,6 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; items: Ar
     "category": "꽃 · 왕관",
     "items": [
       {
-        "slug": "flower-01",
-        "label": "국화꽃",
-        "width": 400,
-        "height": 400
-      },
-      {
         "slug": "flower-02",
         "label": "꽃 살구",
         "width": 400,
@@ -422,49 +417,49 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; items: Ar
       },
       {
         "slug": "flower-14",
-        "label": "남왕관 하늘",
+        "label": "왕관 하늘",
         "width": 400,
         "height": 359
       },
       {
         "slug": "flower-15",
-        "label": "남왕관검",
+        "label": "왕관 검정",
         "width": 400,
         "height": 359
       },
       {
         "slug": "flower-16",
-        "label": "남왕관노랑",
+        "label": "왕관 노랑",
         "width": 400,
         "height": 359
       },
       {
         "slug": "flower-17",
-        "label": "남왕관흰",
+        "label": "왕관 화이트",
         "width": 400,
         "height": 359
       },
       {
         "slug": "flower-18",
-        "label": "여왕관 노",
+        "label": "왕관2 노랑",
         "width": 351,
         "height": 400
       },
       {
         "slug": "flower-19",
-        "label": "여왕관검",
+        "label": "왕관2 검정",
         "width": 351,
         "height": 400
       },
       {
         "slug": "flower-20",
-        "label": "여왕관핑크",
+        "label": "왕관2 핑크",
         "width": 351,
         "height": 400
       },
       {
         "slug": "flower-21",
-        "label": "여왕관흰",
+        "label": "왕관2 화이트",
         "width": 351,
         "height": 400
       }
@@ -703,22 +698,10 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; items: Ar
         "height": 400
       },
       {
-        "slug": "animal-14",
-        "label": "여우",
-        "width": 400,
-        "height": 258
-      },
-      {
         "slug": "animal-15",
         "label": "여우2",
         "width": 400,
         "height": 352
-      },
-      {
-        "slug": "animal-16",
-        "label": "코끼리",
-        "width": 400,
-        "height": 279
       },
       {
         "slug": "animal-17",
@@ -737,12 +720,6 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; items: Ar
         "label": "토끼",
         "width": 321,
         "height": 400
-      },
-      {
-        "slug": "animal-20",
-        "label": "팬더",
-        "width": 400,
-        "height": 247
       },
       {
         "slug": "animal-21",
@@ -776,7 +753,7 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; items: Ar
       },
       {
         "slug": "food-04",
-        "label": "곽우유",
+        "label": "우유",
         "width": 243,
         "height": 400
       },
@@ -817,12 +794,6 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; items: Ar
         "height": 400
       },
       {
-        "slug": "food-11",
-        "label": "떡볶이",
-        "width": 400,
-        "height": 229
-      },
-      {
         "slug": "food-12",
         "label": "떡볶이그릇",
         "width": 400,
@@ -833,12 +804,6 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; items: Ar
         "label": "레몬",
         "width": 400,
         "height": 297
-      },
-      {
-        "slug": "food-14",
-        "label": "레몬2_",
-        "width": 400,
-        "height": 331
       },
       {
         "slug": "food-15",
@@ -908,7 +873,7 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; items: Ar
       },
       {
         "slug": "food-26",
-        "label": "자른김밥",
+        "label": "김밥",
         "width": 400,
         "height": 283
       },
@@ -980,7 +945,7 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; items: Ar
       },
       {
         "slug": "food-38",
-        "label": "파르페",
+        "label": "프레첼",
         "width": 400,
         "height": 313
       },
@@ -989,12 +954,6 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; items: Ar
         "label": "포도",
         "width": 400,
         "height": 365
-      },
-      {
-        "slug": "food-40",
-        "label": "포도2",
-        "width": 400,
-        "height": 382
       },
       {
         "slug": "food-41",
