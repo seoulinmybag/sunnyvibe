@@ -1,0 +1,141 @@
+# 청첩장 꾸미기 (sunny vibe)
+
+결혼식 청첩장 디자인 편집기. 고객이 네이버폼으로 주문/결제하면, 관리자가 사진과 정보를 넣어
+1차 시안을 자동 생성하고, 고객이 비밀번호로 접속해 자유롭게 편집한 뒤 확정하면 인쇄용
+PDF/SVG/PNG가 만들어져 관리자가 내려받는다.
+
+## 배포
+
+- 사이트: https://wedding-invitation-editor.vercel.app
+- 관리자: `/admin` — 비밀번호는 Vercel 환경변수에 있고 대화에 적지 않는다
+- 고객: `/order/:id` (주문 생성 시 링크와 비밀번호가 발급됨)
+- 플레이그라운드: `/` (로그인 불필요, 저장 안 됨)
+- GitHub: seoulinmybag/sunnyvibe (main에 push하면 Vercel 자동 배포)
+- Supabase: `orders` 테이블 하나 + 비공개 버킷 4개(`order-photos`, `order-maps`, `order-qr`, `order-exports`).
+  URL/서비스키는 Vercel 환경변수와 `.env.local`에 이미 있다.
+
+## 스택
+
+Vite + React 19 + TypeScript, react-konva(캔버스), jsPDF, react-router-dom.
+브라우저는 Supabase에 직접 접근하지 않고 전부 `api/`의 Vercel 서버리스 함수를 거친다
+(service role key 사용, RLS는 anon 완전 차단). 인증은 어드민/고객 모두 HttpOnly 서명 쿠키(자체 구현).
+
+## 작업 방식
+
+- **개발 서버는 Bash로 띄우지 말고** 브라우저 도구의 `preview_start`를 쓴다.
+- 레이아웃을 건드리면 **배포 전에 브라우저에서 눈으로 확인한다.** 특히 조합별 겹침은
+  요소 사각형을 좌표로 훑어 자동 검사하면 확실하다(과거에 이 방법으로 4건을 잡았다).
+- 배포는 `git push origin main` → Vercel 자동. 반영 확인은 `npm run build`로 나온
+  `index-<hash>.js`가 라이브 HTML에 뜰 때까지 폴링한다. **커밋만 하고 푸시를 잊지 말 것.**
+- 사용자는 한국어로 답변받는다. 요청을 여러 개 묶어서 주는 편이니 한 번에 처리하고 끝에 배포한다.
+
+## 핵심 파일
+
+- `src/lib/layoutGenerator.ts` — 옵션 조합별 초기 시안 생성. **이 프로젝트의 심장.**
+- `src/lib/calendar.ts` + `src/data/calendarDigits.ts` — 달력 SVG
+- `src/lib/svgExport.ts` — PageState → 편집 가능한 SVG
+- `src/lib/tint.ts` — 단색 아이콘 색상 변경
+- `src/components/Editor.tsx` — 편집기 본체 / `CanvasEditor.tsx` — 캔버스, 선택, 스냅
+- `src/data/iconCatalog.ts` — 아이콘 목록(**손으로 관리**), `src/data/fonts.ts` — 폰트 목록
+- `api/orders/*.ts` — create, list, detail, data, autosave, confirm, customer-login, trash
+- `api/_storageUrls.ts`, `_auth.ts`, `_cookies.ts`, `_supabaseAdmin.ts`, `_parseForm.ts`
+
+## 제품 사양
+
+**규격은 가로 16:11 한 종류뿐이다.** 세로는 없앴다. 화면 800×550px = 인쇄 160×110mm이므로
+1px = 0.2mm, 레퍼런스의 pt 값은 `ptToPx()`(= pt × 1.7639)로 환산한다.
+
+면 구성 — `Side = 'front' | 'inner-top' | 'inner-bottom' | 'back'`:
+
+| 타입 | 면 |
+|---|---|
+| 1단 | 앞면(`front`) · 후면(`back`) |
+| 2단 | 외지 앞(`front`) · 내지 상단(`inner-top`) · 내지 아랫단(`inner-bottom`) · 외지 뒤(`back`) |
+
+옵션: **계좌**, **약도**(1단만), **QR**, **캘린더**(1단은 선택, 2단은 외지 뒤에 항상).
+1단/2단과 옵션은 **관리자가 주문 생성할 때만** 정한다. 고객은 못 바꾼다.
+
+### 뒷면 배치 규칙 (1단)
+
+오른쪽 칸을 **실제로 채우는 것(계좌·약도·캘린더)** 이 있으면 좌우 2단 컬럼, 없으면
+전부 가운데 정렬. **QR은 우하단에 얹히기만 하므로 2단 컬럼 트리거가 아니다.**
+
+레이아웃 레퍼런스 원본: `~/Desktop/청첩장/꾸미기 사이트/청첩장 배치/` (13장, 붉은 글씨가 폰트·pt).
+이미지 좌상단 초록 박스는 구분 라벨이라 시안에 넣지 않는다.
+
+## 반드시 알아야 할 함정
+
+1. **Vercel 중첩 동적 API 라우트**: `api/orders/[id]/foo.ts`는 SPA 리라이트에 가려 프로덕션에서
+   405/404가 난다. 반드시 평평한 파일(`api/orders/foo.ts`) + 쿼리스트링(`?id=`).
+2. **`tsconfig.api.json`의 `include`는 API가 실제로 쓰는 파일만 나열한다.** 브라우저 전용 파일
+   (`icons.ts`의 `import.meta.glob`, `tint.ts`의 DOM)이 들어가면 Node 타입체크가 깨진다.
+3. api에서 import하는 `src/` 파일은 **자기 내부 상대경로 import에 `.js` 확장자**가 있어야 한다
+   (Vercel 서버 빌드가 엄격한 Node ESM 규칙을 적용).
+4. **서명 URL은 만료된다.** 시안 데이터에는 `storage://버킷/경로` 포인터를 저장하고 읽을 때마다
+   새로 서명한다(`api/_storageUrls.ts`). 예전에 만료된 URL도 파싱해 자동 복구한다.
+   과거에 "사진이 1시간 뒤 안 보임" 버그의 원인이었다.
+5. **캔버스는 웹폰트를 스스로 불러오지 않는다.** `loadFonts()`로 직접 로드하고 로드 후 다시 그린다.
+   내보내기 전에는 `document.fonts.ready`를 기다린다.
+6. **`<img>`로 렌더되는 SVG 안에서는 웹폰트를 못 쓴다.** 그래서 달력 숫자는 초록우산 만세체
+   글리프를 **외곽선(path)** 으로 추출해 박아뒀다.
+7. **Konva는 dragend 다음 프레임에 dragmove를 한 번 더 쏜다.** `node.isDragging()`으로 걸러야
+   중앙 가이드선이 남지 않는다.
+8. Supabase SQL Editor로 스키마를 바꾸면 PostgREST 캐시가 늦을 수 있다 →
+   `NOTIFY pgrst, 'reload schema';`
+9. macOS 파일명은 **NFD**로 저장된다. 한글 파일명을 코드의 NFC 문자열과 비교하려면
+   `.normalize('NFC')` 필수. (아이콘 변환 때 라벨이 깨진 원인)
+
+## 자산
+
+**폰트** — `src/assets/fonts/` 9종 2MB. 원본 24MB를 KS X 1001 한글 2350자로 서브셋한 woff2.
+굵기마다 **패밀리 이름을 따로** 준다(Konva가 CSS 굵기를 못 받아서, 캔버스와 SVG를 맞추려고).
+`src/index.css`의 `@font-face`와 `src/data/fonts.ts` 목록이 짝이다. 구글 폰트 28종도 병행.
+
+원본: `~/Desktop/청첩장/꾸미기 사이트/써니폰트.zip`. 재생성:
+```
+python3 -m fontTools.subset <in.otf> --text-file=<2350자> --output-file=<out.woff2> \
+  --flavor=woff2 --layout-features='' --no-hinting --desubroutinize --name-IDs=''
+```
+
+**아이콘** — `src/assets/icons/` 249개 10테마, 11MB.
+웨딩(17) · 웨딩 3D(37) · 꾸미기(3) · 날씨(24) · 동물(18) · 음식(40) · 취미(20) · 크레용(30) · 추억(30) · 색연필(30)
+
+원본: `~/Desktop/청첩장/꾸미기 사이트/청첩장아이콘2/`. 변환은 sharp로
+`.trim({threshold:10})` → `resize(400, inside)` → `png({palette:true, quality:80})`.
+sharp는 작업할 때만 `npm i -D` 하고 **끝나면 uninstall**한다.
+`src/data/iconCatalog.ts`는 처음에 스크립트로 만들었지만 지금은 **손으로 관리**한다 —
+아이콘을 빼거나 이름을 바꿀 때 카탈로그와 `src/assets/icons/`의 파일을 함께 손봐야 한다.
+
+**꾸미기 테마 3개(꽃·왕관·왕관2)만 색상 변경이 된다.** 원본 PNG의 알파는 두고 색만 덮어쓰는
+방식(`tint.ts`)이라 화면·인쇄 PNG·SVG가 모두 같은 색으로 나가고, 시안에는 색상값만 저장된다.
+
+## 만들어져 있는 기능
+
+- 관리자: 주문 생성(사진/약도/QR 업로드, 혼주·계좌·교통 입력, 고인 표시 故/✿),
+  대시보드, **주문서 보기**(시안 문구를 직접 편집), **휴지통**(14일 보관 후 파일까지 완전 삭제)
+- 고객: 자동저장(1.2초 디바운스) + 임시저장 버튼 + 탭 이탈 시 저장, 시안 미리보기(전 면),
+  확정 전 경고 팝업, 확정 후 읽기전용 잠금
+- 편집기: 아이콘/텍스트 배치, **다중 선택**(⌘/Ctrl·Shift 클릭, 드래그 박스, 함께 이동),
+  레이어 패널 + 캔버스 레이어 버튼, 중앙 스냅 가이드, 자간·굵기·기울임·색상,
+  텍스트 추가, 사진 자르기(⤢ 버튼으로만 — 더블클릭은 뺐다)
+- 확정 파이프라인: 면 수만큼 PDF 페이지 + 면별 PNG/SVG, 이미지는 base64 인라인
+
+## 열려 있는 것
+
+- **폰트 웹폰트 라이선스 확인 필요**: 어비 스카이레인 / KCC 손기정체 / 초록우산 만세체.
+  상업적 사용과 웹 임베딩은 별개 조건인 한글 폰트가 많다. 프리텐다드는 OFL이라 안전.
+- **프리픽(Freepik/Magnific) 아이콘**: 표준 Premium으로는 불가. 약관상 ①콘텐츠를 라이브러리로
+  제3자에게 제공 금지 ②재판매 인쇄물 목록에 "청첩장·달력" 명시 ③제3자 사용 허락 예외가
+  "사용자(사장님)가 항목을 고를 것 + 자동화 아닐 것"을 요구. 고객이 고르는 셀프 편집기는 해당 없음.
+  가능한 길: 관리자 전용 아이콘 패널(사장님이 골라 배치) 또는 프리픽에 확장 라이선스 문의.
+- **아이콘 잔여 정리**: "여우"를 지웠는데 "여우2"가 남아 있고, "우유"가 두 개다(곽우유→우유 변경 때문).
+- 노토 컬러 이모지(3,731개)는 **넣지 않기로 결정**했다.
+- 크레용 아이콘 41종(첫 세트)의 출처를 아직 확인받지 못했다 — 직접 제작이 아니면 정리 필요.
+
+## 알려진 한계
+
+- SVG 내보내기: 사용자가 직접 줄바꿈하지 않고 자동 줄바꿈된 긴 문구는 SVG에서 줄바꿈이
+  정확히 맞지 않을 수 있다(캔버스만 실제 폭을 측정하므로 자막 배경 폭도 근사치다).
+- 장식 아이콘은 SVG에서도 래스터(base64 이미지)로 들어간다. 달력만 벡터.
+- 달력은 주문 생성 시점의 예식일로 만들어진다. 나중에 날짜를 바꿔도 다시 그려지지 않는다.
+- 2단은 접지 미리보기가 없다(면을 따로 보여줄 뿐).
