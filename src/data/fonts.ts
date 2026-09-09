@@ -25,6 +25,20 @@ function latin(family: string, label: string, fallback: string): FontOption {
  */
 export const FONT_GROUPS: FontGroup[] = [
   {
+    label: '써니바이브 기본',
+    options: [
+      { value: "'Pretendard Light', sans-serif", label: '프리텐다드 라이트' },
+      { value: "'Pretendard', sans-serif", label: '프리텐다드 레귤러' },
+      { value: "'Pretendard Medium', sans-serif", label: '프리텐다드 미디움' },
+      { value: "'Pretendard SemiBold', sans-serif", label: '프리텐다드 세미볼드' },
+      { value: "'Pretendard Bold', sans-serif", label: '프리텐다드 볼드' },
+      { value: "'UhBee Skyrain', cursive", label: '어비 스카이레인' },
+      { value: "'UhBee Skyrain Bold', cursive", label: '어비 스카이레인 볼드' },
+      { value: "'KCC Sonkeechung', cursive", label: 'KCC 손기정체' },
+      { value: "'Yoon ManSeh', cursive", label: '초록우산어린이 만세' },
+    ],
+  },
+  {
     label: '한글 · 명조',
     options: [
       korean('Noto Serif KR', '본명조'),

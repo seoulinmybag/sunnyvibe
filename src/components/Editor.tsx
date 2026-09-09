@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import type Konva from 'konva';
 import CanvasEditor from './CanvasEditor';
 import IconLibrary from './IconLibrary';
-import OrientationPicker from './OrientationPicker';
 import ImageUpload from './ImageUpload';
 import TemplatePicker from './TemplatePicker';
 import TextFieldsPanel from './TextFieldsPanel';
@@ -32,8 +31,6 @@ interface EditorProps {
   initialPages: Pages;
   /** Only the standalone `/` playground shows this today. */
   showCustomerLinkPanel?: boolean;
-  /** 1단/2단과 가로/세로는 주문 사양이라 고객 화면에서는 바꿀 수 없어야 한다. */
-  allowOrientationChange?: boolean;
   /** true once the order is confirmed — canvas becomes view-only and editing panels are hidden. */
   readOnly?: boolean;
   /** fired whenever `pages` changes, so a customer-order host can debounce-save it. */
@@ -60,16 +57,14 @@ function maxZIndex(pages: Pages): number {
 }
 
 export default function Editor({
-  orientation: initialOrientation,
+  orientation,
   initialPages,
   readOnly = false,
-  allowOrientationChange = false,
   onPagesChange,
   onConfirm,
   onSaveNow,
   saving,
 }: EditorProps) {
-  const [orientation, setOrientation] = useState<Orientation>(initialOrientation);
   const spec = ORIENTATIONS[orientation];
 
   const [pages, setPages] = useState<Pages>(initialPages);
@@ -238,37 +233,6 @@ export default function Editor({
     moveLayer(selected, dir);
   }
 
-  function handleOrientationChange(next: Orientation) {
-    if (next === orientation) return;
-    const oldSpec = ORIENTATIONS[orientation];
-    const newSpec = ORIENTATIONS[next];
-    const scaleX = newSpec.displayWidth / oldSpec.displayWidth;
-    const scaleY = newSpec.displayHeight / oldSpec.displayHeight;
-    // 사진·아이콘은 가로/세로를 따로 늘리면 그림이 찌그러진다. 한 배율(작은 쪽)로만 줄이고,
-    // 카드 안에서의 상대적인 중심 위치를 유지해 원래 있던 자리로 옮긴다.
-    const uniform = Math.min(scaleX, scaleY);
-    const rescale = (p: PageState): PageState => ({
-      ...p,
-      icons: p.icons.map((i) => {
-        const width = i.width * uniform;
-        const height = i.height * uniform;
-        const centerX = ((i.x + i.width / 2) / oldSpec.displayWidth) * newSpec.displayWidth;
-        const centerY = ((i.y + i.height / 2) / oldSpec.displayHeight) * newSpec.displayHeight;
-        return { ...i, x: centerX - width / 2, y: centerY - height / 2, width, height };
-      }),
-      // 텍스트는 그림이 아니라서 폭이 카드 너비를 따라가는 게 자연스럽다
-      texts: p.texts.map((t) => ({ ...t, x: t.x * scaleX, y: t.y * scaleY, width: t.width * scaleX })),
-    });
-    setPages((prev) => {
-      const next: Pages = {};
-      for (const [side, page] of Object.entries(prev)) {
-        if (page) next[side as Side] = rescale(page);
-      }
-      return next;
-    });
-    setOrientation(next);
-  }
-
   function handleTemplateChange(id: string) {
     updateActivePage((p) => ({ ...p, templateId: id, customColor: null }));
   }
@@ -340,7 +304,6 @@ export default function Editor({
         </section>
         {!readOnly && (
           <aside className="side-col">
-            {allowOrientationChange && <OrientationPicker orientation={orientation} onChange={handleOrientationChange} />}
             <ImageUpload onUpload={handleUploadPhoto} />
             <TemplatePicker
               templateId={activePage.templateId}

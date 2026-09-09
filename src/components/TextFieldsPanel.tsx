@@ -117,6 +117,42 @@ export default function TextFieldsPanel({ texts, selected, onChange, onSelect, o
           </div>
           <div className="style-row">
             <label>
+              자간
+              <input
+                type="range"
+                min={-4}
+                max={20}
+                value={selectedField.letterSpacing ?? 0}
+                onChange={(e) => onChange(selectedField.id, { letterSpacing: Number(e.target.value) })}
+              />
+              <span>{selectedField.letterSpacing ?? 0}px</span>
+            </label>
+          </div>
+          <div className="style-row align-row">
+            {([
+              ['bold', '굵게'],
+              ['italic', '기울임'],
+            ] as const).map(([kind, label]) => {
+              const parts = (selectedField.fontStyle ?? '').split(' ').filter(Boolean);
+              const on = parts.includes(kind);
+              return (
+                <button
+                  key={kind}
+                  className={'align-btn' + (on ? ' align-active' : '')}
+                  onClick={() => {
+                    const next = on ? parts.filter((p) => p !== kind) : [...parts, kind];
+                    // Konva는 'italic bold' 순서만 알아듣는다
+                    const ordered = ['italic', 'bold'].filter((p) => next.includes(p));
+                    onChange(selectedField.id, { fontStyle: ordered.join(' ') || 'normal' });
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="style-row">
+            <label>
               <input
                 type="checkbox"
                 checked={!!selectedField.background}

@@ -417,3 +417,78 @@ code {
   font-size: 13px;
   padding: 6px 10px;
 }
+
+/* ── 써니바이브 자체 폰트 ─────────────────────────────────────
+   KS X 1001 한글 2350자로 서브셋한 woff2. 굵기마다 패밀리 이름을 따로 주는 이유는
+   Konva가 CSS 굵기를 그대로 못 받아서, 캔버스와 SVG 내보내기가 어긋나지 않게 하려는 것. */
+@font-face {
+  font-family: 'Pretendard Light';
+  src: url('./assets/fonts/Pretendard-Light.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  src: url('./assets/fonts/Pretendard-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Pretendard Medium';
+  src: url('./assets/fonts/Pretendard-Medium.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Pretendard SemiBold';
+  src: url('./assets/fonts/Pretendard-SemiBold.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Pretendard Bold';
+  src: url('./assets/fonts/Pretendard-Bold.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'UhBee Skyrain';
+  src: url('./assets/fonts/UhBeeSkyrain-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'UhBee Skyrain Bold';
+  src: url('./assets/fonts/UhBeeSkyrain-Bold.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'KCC Sonkeechung';
+  src: url('./assets/fonts/KCCSonkeechung.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Yoon ManSeh';
+  src: url('./assets/fonts/YoonChildfundManSeh.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}

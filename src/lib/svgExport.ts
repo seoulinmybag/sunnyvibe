@@ -108,7 +108,11 @@ function renderText(field: TextField): string {
     .join('');
   const background = field.background && field.text.trim() !== '' ? renderTextBackground(field, lines) : '';
   const tracking = field.letterSpacing ? ` letter-spacing="${field.letterSpacing}"` : '';
-  return `${background}<text font-family="${esc(field.fontFamily)}" font-size="${field.fontSize}" fill="${esc(field.fill)}" text-anchor="${anchor}"${tracking}>${tspans}</text>`;
+  // Konva는 굵기·기울임을 한 문자열로 받지만 SVG는 속성이 따로라 풀어준다
+  const style = field.fontStyle ?? '';
+  const weight = style.includes('bold') ? ' font-weight="bold"' : '';
+  const italic = style.includes('italic') ? ' font-style="italic"' : '';
+  return `${background}<text font-family="${esc(field.fontFamily)}" font-size="${field.fontSize}" fill="${esc(field.fill)}" text-anchor="${anchor}"${tracking}${weight}${italic}>${tspans}</text>`;
 }
 
 /**

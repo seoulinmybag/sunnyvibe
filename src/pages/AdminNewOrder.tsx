@@ -9,13 +9,14 @@ interface CreateResult {
 
 interface FamilySide {
   name: string;
+  birth: string;
   father: string;
   fatherDeceased: boolean;
   mother: string;
   motherDeceased: boolean;
 }
 
-const emptyFamily: FamilySide = { name: '', father: '', fatherDeceased: false, mother: '', motherDeceased: false };
+const emptyFamily: FamilySide = { name: '', birth: '', father: '', fatherDeceased: false, mother: '', motherDeceased: false };
 
 /** 신랑측/신부측 입력 묶음. 부모님 이름은 두 칸 모두 선택 입력이고, 각각 고인 표시를 켤 수 있다. */
 function FamilyFields({
@@ -36,6 +37,16 @@ function FamilyFields({
       <label className="admin-field">
         <span>{nameLabel}</span>
         <input type="text" value={value.name} onChange={(e) => onChange({ ...value, name: e.target.value })} />
+      </label>
+
+      <label className="admin-field">
+        <span>생년월일 (앞면 이름 아래)</span>
+        <input
+          type="text"
+          value={value.birth}
+          placeholder="1997.05.13"
+          onChange={(e) => onChange({ ...value, birth: e.target.value })}
+        />
       </label>
 
       <div className="admin-field">
@@ -76,21 +87,19 @@ export default function AdminNewOrder() {
   const [checking, setChecking] = useState(true);
 
   const [customerName, setCustomerName] = useState('');
-  const [names, setNames] = useState('');
   const [title, setTitle] = useState('');
   const [groom, setGroom] = useState<FamilySide>(emptyFamily);
   const [bride, setBride] = useState<FamilySide>(emptyFamily);
   const [deceasedStyle, setDeceasedStyle] = useState<'hanja' | 'flower'>('hanja');
   const [date, setDate] = useState('');
   const [weddingDate, setWeddingDate] = useState('');
-  const [transport, setTransport] = useState({ address: '', phone: '', subway: '', bus: '', parking: '' });
   const [venue, setVenue] = useState('');
   const [greeting, setGreeting] = useState('');
-  const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape');
   const [panelType, setPanelType] = useState<'single' | 'fold'>('single');
   const [hasAccount, setHasAccount] = useState(false);
   const [hasMap, setHasMap] = useState(false);
   const [hasQr, setHasQr] = useState(false);
+  const [hasCalendar, setHasCalendar] = useState(false);
   const [accountGroom, setAccountGroom] = useState('');
   const [accountBride, setAccountBride] = useState('');
   const [customerPassword, setCustomerPassword] = useState('');
@@ -106,8 +115,7 @@ export default function AdminNewOrder() {
   const anyDeceased =
     groom.fatherDeceased || groom.motherDeceased || bride.fatherDeceased || bride.motherDeceased;
   const isFold = panelType === 'fold';
-  const mapForced = isFold;
-  const mapChecked = mapForced || hasMap;
+  const mapChecked = !isFold && hasMap;
 
   useEffect(() => {
     fetch('/api/admin/session', { credentials: 'include' })
@@ -125,16 +133,16 @@ export default function AdminNewOrder() {
 
     if (!customerName.trim()) return setError('고객명을 입력해주세요.');
     if (!photo) return setError('신랑신부 사진을 올려주세요.');
-    if (isFold && !weddingDate) return setError('2단은 외지 뒷면에 달력이 들어가서 예식일을 선택해야 해요.');
+    if ((isFold || hasCalendar) && !weddingDate) return setError('달력을 넣으려면 예식일을 선택해야 해요.');
     if (mapChecked && !map) return setError('약도 이미지를 올려주세요.');
     if (hasQr && !qr) return setError('QR 이미지를 올려주세요.');
 
     const form = new FormData();
     form.set('customer_name', customerName);
-    form.set('names', names);
     form.set('title', title);
     for (const [side, value] of [['groom', groom], ['bride', bride]] as const) {
       form.set(`${side}_name`, value.name);
+      form.set(`${side}_birth`, value.birth);
       form.set(`${side}_father`, value.father);
       form.set(`${side}_father_deceased`, String(value.fatherDeceased));
       form.set(`${side}_mother`, value.mother);
@@ -143,25 +151,18 @@ export default function AdminNewOrder() {
     form.set('deceased_style', deceasedStyle);
     form.set('date', date);
     form.set('wedding_date', weddingDate);
-    if (isFold) {
-      form.set('transport_address', transport.address);
-      form.set('transport_phone', transport.phone);
-      form.set('transport_subway', transport.subway);
-      form.set('transport_bus', transport.bus);
-      form.set('transport_parking', transport.parking);
-    }
     form.set('venue', venue);
     form.set('greeting', greeting);
     form.set('panel_type', panelType);
     form.set('has_account', String(hasAccount));
     form.set('has_map', String(mapChecked));
     form.set('has_qr', String(hasQr));
+    form.set('has_calendar', String(isFold || hasCalendar));
     if (hasAccount) {
       form.set('account_groom', accountGroom);
       form.set('account_bride', accountBride);
     }
     if (customerPassword.trim()) form.set('customer_password', customerPassword.trim());
-    form.set('orientation', orientation);
     form.set('photo', photo);
     if (mapChecked && map) form.set('map', map);
     if (hasQr && qr) form.set('qr', qr);
@@ -244,11 +245,6 @@ export default function AdminNewOrder() {
         )}
 
         <label className="admin-field">
-          <span>앞면 표시 이름 (비우면 신랑·신부 이름으로 자동)</span>
-          <input type="text" value={names} onChange={(e) => setNames(e.target.value)} placeholder="김철수 · 이영희" />
-        </label>
-
-        <label className="admin-field">
           <span>제목 (앞면 하단 자막)</span>
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="민호와 혜진이는 평생 사랑할 것을 맹세합니다" />
         </label>
@@ -259,7 +255,7 @@ export default function AdminNewOrder() {
         </label>
 
         <label className="admin-field">
-          <span>예식일 {isFold ? '(2단 달력용 · 필수)' : '(달력용)'}</span>
+          <span>예식일 {isFold || hasCalendar ? '(달력용 · 필수)' : '(달력용)'}</span>
           <input type="date" value={weddingDate} onChange={(e) => setWeddingDate(e.target.value)} />
         </label>
 
@@ -279,18 +275,6 @@ export default function AdminNewOrder() {
         </label>
 
         <div className="admin-field">
-          <span>카드 방향</span>
-          <div className="admin-radio-row">
-            <label>
-              <input type="radio" checked={orientation === 'landscape'} onChange={() => setOrientation('landscape')} /> 가로 (16:11)
-            </label>
-            <label>
-              <input type="radio" checked={orientation === 'portrait'} onChange={() => setOrientation('portrait')} /> 세로 (11:16)
-            </label>
-          </div>
-        </div>
-
-        <div className="admin-field">
           <span>레이아웃 타입</span>
           <div className="admin-radio-row">
             <label>
@@ -302,7 +286,7 @@ export default function AdminNewOrder() {
           </div>
           {isFold && (
             <p className="admin-hint">
-              2단은 외지 앞(표지) · 외지 뒤(달력) · 내지 좌(약도·교통) · 내지 우(인사말) 네 면으로 만들어져요. 약도는 필수입니다.
+              2단은 외지 앞(표지) · 내지 상단(인사말) · 내지 아랫단(혼주·계좌·일시) · 외지 뒤(달력) 네 면이에요. 달력이 들어가고 약도는 넣을 수 없습니다.
             </p>
           )}
         </div>
@@ -314,10 +298,14 @@ export default function AdminNewOrder() {
               <input type="checkbox" checked={hasAccount} onChange={(e) => setHasAccount(e.target.checked)} /> 계좌
             </label>
             <label>
-              <input type="checkbox" checked={mapChecked} disabled={mapForced} onChange={(e) => setHasMap(e.target.checked)} /> 약도{mapForced && ' (2단 필수)'}
+              <input type="checkbox" checked={mapChecked} disabled={isFold} onChange={(e) => setHasMap(e.target.checked)} /> 약도{isFold && ' (2단 불가)'}
             </label>
             <label>
               <input type="checkbox" checked={hasQr} onChange={(e) => setHasQr(e.target.checked)} /> QR
+            </label>
+            <label>
+              <input type="checkbox" checked={isFold || hasCalendar} disabled={isFold} onChange={(e) => setHasCalendar(e.target.checked)} /> 캘린더
+              {isFold && ' (2단 필수)'}
             </label>
           </div>
         </div>
@@ -344,30 +332,6 @@ export default function AdminNewOrder() {
                 placeholder={'신부측 혼주: (대구은행) 000-00-000000\n신부: (대구은행) 000-00-000000'}
               />
             </label>
-          </fieldset>
-        )}
-
-        {isFold && (
-          <fieldset className="admin-fieldset">
-            <legend>내지 좌측 · 교통 안내</legend>
-            <p className="admin-hint">약도 아래에 들어가요. 비운 항목은 빈 칸으로 남고 고객이 채울 수 있어요.</p>
-            {([
-              ['address', '주소', '경기 용인시 수지구 신봉1로344번길 1 누에바 파밀리아 웨딩', 1],
-              ['phone', '전화', '031. 266. 7772', 1],
-              ['subway', '지하철', '신분당선 수지구청역 3-4번 출구 사이 셔틀버스 운행 (약 15분 소요)', 2],
-              ['bus', '버스', '서봉마을 노블랜드(15-2) 정류장 하차 (도보 약 3분)', 2],
-              ['parking', '주차', '건물 지하 주차장 2시간 무료', 2],
-            ] as const).map(([key, label, placeholder, rows]) => (
-              <label key={key} className="admin-field">
-                <span>{label}</span>
-                <textarea
-                  rows={rows}
-                  value={transport[key]}
-                  placeholder={placeholder}
-                  onChange={(e) => setTransport((prev) => ({ ...prev, [key]: e.target.value }))}
-                />
-              </label>
-            ))}
           </fieldset>
         )}
 

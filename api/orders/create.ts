@@ -40,6 +40,7 @@ async function uploadOne(bucket: string, path: string, file: FormidableFile): Pr
 function readFamily(fields: Record<string, string>, side: 'groom' | 'bride'): FamilyInfo {
   return {
     name: (fields[`${side}_name`] ?? '').trim(),
+    birth: (fields[`${side}_birth`] ?? '').trim(),
     father: {
       name: (fields[`${side}_father`] ?? '').trim(),
       deceased: fields[`${side}_father_deceased`] === 'true',
@@ -92,7 +93,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const hasAccount = fields.has_account === 'true';
   const hasQr = fields.has_qr === 'true';
-  const hasMap = panelType === 'fold' ? true : fields.has_map === 'true';
+  const hasMap = panelType === 'fold' ? false : fields.has_map === 'true';
   if (hasMap && !files.map) {
     res.status(400).json({ ok: false, error: '약도 이미지가 필요해요.' });
     return;
@@ -102,7 +103,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const orientation = fields.orientation === 'portrait' ? 'portrait' : 'landscape';
+  // 규격은 가로 한 종류뿐이다
+  const orientation = 'landscape';
   const groom = readFamily(fields, 'groom');
   const bride = readFamily(fields, 'bride');
   const deceasedStyle: DeceasedStyle = fields.deceased_style === 'flower' ? 'flower' : 'hanja';
@@ -142,7 +144,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       hasAccount,
       hasMap,
       hasQr,
-      orientation,
+      hasCalendar: panelType === 'fold' ? true : fields.has_calendar === 'true',
       photoUrl: photoSigned?.signedUrl ?? null,
       photoSize,
       mapUrl: mapSigned?.signedUrl ?? null,
@@ -154,20 +156,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       groom,
       bride,
       deceasedStyle,
-      // 앞면 표시 이름은 비워두면 신랑·신부 이름으로 자동 조합
-      names: fields.names?.trim() || [groom.name, bride.name].filter(Boolean).join(' · ') || '신랑 · 신부',
       title: fields.title || '',
       date: fields.date || '',
       venue: fields.venue || '',
       greeting: fields.greeting || '',
       weddingDate: fields.wedding_date || '',
-      transport: {
-        address: fields.transport_address ?? '',
-        phone: fields.transport_phone ?? '',
-        subway: fields.transport_subway ?? '',
-        bus: fields.transport_bus ?? '',
-        parking: fields.transport_parking ?? '',
-      },
     };
     // the generator needs loadable URLs, but what gets stored has to outlive them
     const pages = normalizePagesForStorage(buildInitialPages(layoutOptions));

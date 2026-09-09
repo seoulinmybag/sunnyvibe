@@ -49,6 +49,8 @@ export interface TextField {
   backgroundPadding?: number;
   /** Extra tracking between glyphs — the widely-spaced 신랑·신부 이름 look (송 지 원). */
   letterSpacing?: number;
+  /** Konva's font style string: 'normal' | 'bold' | 'italic' | 'italic bold'. */
+  fontStyle?: string;
 }
 
 export interface Template {
@@ -64,7 +66,8 @@ export type SelectedElement =
   | { type: 'text'; id: string }
   | null;
 
-export type Orientation = 'landscape' | 'portrait';
+/** 가로 한 종류만 판매한다. 유니온으로 남겨둬 규격이 늘어나도 타입이 잡아주게 한다. */
+export type Orientation = 'landscape';
 
 export interface OrientationSpec {
   id: Orientation;
@@ -84,7 +87,7 @@ export interface OrientationSpec {
  * 1단은 front/back 두 면, 2단 접지는 여기에 내지 두 면이 더 붙는다.
  * front = 외지 앞(표지), back = 외지 뒤(달력), inner-left = 내지 좌(약도·교통), inner-right = 내지 우(인사말).
  */
-export type Side = 'front' | 'back' | 'inner-left' | 'inner-right';
+export type Side = 'front' | 'inner-top' | 'inner-bottom' | 'back';
 
 export type PanelType = 'single' | 'fold';
 
@@ -92,7 +95,8 @@ export type PanelType = 'single' | 'fold';
 export type Pages = Partial<Record<Side, PageState>>;
 
 export const SINGLE_SIDES: Side[] = ['front', 'back'];
-export const FOLD_SIDES: Side[] = ['front', 'back', 'inner-left', 'inner-right'];
+/** 접었을 때 읽는 순서: 외지 앞 → 내지 상단 → 내지 아랫단 → 외지 뒤 */
+export const FOLD_SIDES: Side[] = ['front', 'inner-top', 'inner-bottom', 'back'];
 
 export function sidesFor(panelType: PanelType): Side[] {
   return panelType === 'fold' ? FOLD_SIDES : SINGLE_SIDES;
@@ -102,14 +106,14 @@ export function sideLabel(side: Side, panelType: PanelType): string {
   if (panelType === 'fold') {
     if (side === 'front') return '외지 앞';
     if (side === 'back') return '외지 뒤';
-    return side === 'inner-left' ? '내지 좌' : '내지 우';
+    return side === 'inner-top' ? '내지 상단' : '내지 아랫단';
   }
   return side === 'front' ? '앞' : '뒤';
 }
 
 /** Which panels a saved design actually has, in print order. */
 export function panelTypeOf(pages: Partial<Record<Side, unknown>>): PanelType {
-  return pages['inner-left'] || pages['inner-right'] ? 'fold' : 'single';
+  return pages['inner-top'] || pages['inner-bottom'] ? 'fold' : 'single';
 }
 
 export interface PageState {
