@@ -348,21 +348,24 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; items: Ar
         "label": "꽃",
         "width": 400,
         "height": 362,
-        "recolorable": true
+        "recolorable": true,
+        "defaultColor": "#caf0af"
       },
       {
         "slug": "flower-15",
         "label": "왕관",
         "width": 400,
         "height": 359,
-        "recolorable": true
+        "recolorable": true,
+        "defaultColor": "#a0d4f5"
       },
       {
         "slug": "flower-19",
         "label": "왕관2",
         "width": 351,
         "height": 400,
-        "recolorable": true
+        "recolorable": true,
+        "defaultColor": "#f1bdd8"
       }
     ]
   },
@@ -1190,7 +1193,7 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; items: Ar
   },
   {
     "folder": "retro",
-    "category": "추억의 낙서",
+    "category": "추억",
     "items": [
       {
         "slug": "retro-01",
@@ -1376,7 +1379,7 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; items: Ar
   },
   {
     "folder": "doodle",
-    "category": "아이 낙서",
+    "category": "색연필",
     "items": [
       {
         "slug": "doodle-01",

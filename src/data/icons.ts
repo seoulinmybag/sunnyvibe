@@ -24,6 +24,8 @@ export interface ArtSpec {
   height: number;
   /** 단색 실루엣이라 원하는 색으로 칠할 수 있는 아이콘 (꾸미기 테마). */
   recolorable?: boolean;
+  /** 색상 버튼을 열었을 때 처음 잡히는 색 — 원본 그림의 색이다. */
+  defaultColor?: string;
 }
 
 function artIcon(folder: string, category: string, spec: ArtSpec): IconDef {
@@ -33,7 +35,7 @@ function artIcon(folder: string, category: string, spec: ArtSpec): IconDef {
     label: spec.label,
     category,
     recolorable: spec.recolorable === true,
-    defaultColor: spec.recolorable ? '#c58ba0' : undefined,
+    defaultColor: spec.defaultColor,
     naturalWidth: spec.width,
     naturalHeight: spec.height,
     src,
