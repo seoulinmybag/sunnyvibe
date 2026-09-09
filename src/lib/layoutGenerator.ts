@@ -348,15 +348,24 @@ function buildFront(opts: LayoutOptions): PageState {
   return { icons, texts, templateId: TEMPLATE.id, customColor: null };
 }
 
-/** 1단 후면 기본형 — 옵션이 없을 때. 인사말, 좌우 혼주·이름, 하단 날짜·장소. */
+/**
+ * 1단 후면 기본형 — 오른쪽 칸에 넣을 게 없을 때(계좌·약도·달력 모두 없음). 전부 가운데로 모은다:
+ * 인사말, 좌우 혼주·이름, 하단 날짜·장소. QR만 켠 경우도 여기에 해당하고 QR은 우하단에 얹는다.
+ */
 function buildPlainBack(opts: LayoutOptions): PageState {
+  // QR을 얹으면 아래가 좁아져서 날짜·장소를 조금 올리고 폭도 줄여 QR·안내문구와 겹치지 않게 한다
+  const dateY = opts.hasQr ? H * 0.79 : H * 0.83;
+  const venueY = opts.hasQr ? H * 0.845 : H * 0.885;
+  const bottomWidth = opts.hasQr ? W * 0.55 : W * 0.8;
+  const icons: PlacedIcon[] = [];
   const texts: TextField[] = [
     text('message', '인사말', opts.greeting || DEFAULT_GREETING, W / 2, H * 0.1, W * 0.82, ptToPx(11.63), F.light, 1),
     ...familyColumns(opts, H * 0.595, ptToPx(10.69), H * 0.65, ptToPx(14.95), 2),
-    text('date', '날짜', opts.date, W / 2, H * 0.83, W * 0.8, ptToPx(9.88), F.regular, 8),
-    text('venue', '장소', opts.venue, W / 2, H * 0.885, W * 0.8, ptToPx(9.88), F.regular, 9),
+    text('date', '날짜', opts.date, W / 2, dateY, bottomWidth, ptToPx(9.88), F.regular, 8),
+    text('venue', '장소', opts.venue, W / 2, venueY, bottomWidth, ptToPx(9.88), F.regular, 9),
   ];
-  return { icons: [], texts, templateId: TEMPLATE.id, customColor: null };
+  addQr(opts, icons, texts, 10);
+  return { icons, texts, templateId: TEMPLATE.id, customColor: null };
 }
 
 /**
@@ -438,8 +447,9 @@ function buildOptionBack(opts: LayoutOptions): PageState {
 }
 
 function buildSingleBack(opts: LayoutOptions): PageState {
-  const bare = !opts.hasAccount && !opts.hasMap && !opts.hasQr && !opts.hasCalendar;
-  return bare ? buildPlainBack(opts) : buildOptionBack(opts);
+  // QR은 우하단에 얹히기만 할 뿐 오른쪽 칸을 채우지 않는다
+  const usesRightColumn = opts.hasAccount || opts.hasMap || opts.hasCalendar;
+  return usesRightColumn ? buildOptionBack(opts) : buildPlainBack(opts);
 }
 
 /** 2단 내지 상단 — 인사말만 크게. */
