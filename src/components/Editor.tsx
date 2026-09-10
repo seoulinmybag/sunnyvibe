@@ -52,6 +52,8 @@ let uidCounter = 0;
 const HISTORY_LIMIT = 100;
 /** 이 시간 안에 이어진 같은 종류의 변경은 되돌리기 한 칸으로 묶는다. */
 const COALESCE_MS = 700;
+/** 앞면 하단 자막 슬롯. 템플릿을 얹어도 이것만은 위에 남는다. */
+const CAPTION_FIELD_ID = 'title';
 
 /** New elements have to land above everything the auto-layout already placed (e.g. the 자막 caption at z 20). */
 function maxZIndex(pages: Pages): number {
@@ -287,10 +289,21 @@ export default function Editor({
       zCounter.current + 1,
     );
     if (!added.length) return;
-    zCounter.current += added.length;
+    // 자막은 주문마다 다르게 들어가는 자리라 템플릿에는 없다. 얹은 아이콘이 자막을 덮지
+    // 않도록 자막만 맨 위로 올려 준다.
+    const captionZ = zCounter.current + added.length + 1;
+    zCounter.current = captionZ;
     commit((prev) => {
       const front = prev.front;
-      return front ? { ...prev, front: { ...front, icons: [...front.icons, ...added] } } : prev;
+      if (!front) return prev;
+      return {
+        ...prev,
+        front: {
+          ...front,
+          icons: [...front.icons, ...added],
+          texts: front.texts.map((t) => (t.id === CAPTION_FIELD_ID ? { ...t, zIndex: captionZ } : t)),
+        },
+      };
     });
     // 얹은 자리가 앞면이니 보고 있는 면도 앞면으로 옮겨 준다
     setSelection([]);

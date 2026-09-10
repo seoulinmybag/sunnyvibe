@@ -24,7 +24,7 @@ export default function TemplatePanel({ onApply }: Props) {
                 return (
                   <img
                     key={`${spot.iconId}-${i}`}
-                    src={def.src}
+                    src={spot.color ? def.getSrc(spot.color) : def.src}
                     alt=""
                     draggable={false}
                     style={{

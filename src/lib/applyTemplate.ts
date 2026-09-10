@@ -23,13 +23,16 @@ export function templateIcons(
       {
         uid: `${uidPrefix}-${i}`,
         iconId: spot.iconId,
-        src: def.src,
+        // 색을 지정한 아이콘은 그 색으로 그려 둔다 — 캔버스는 color로 다시 칠하지만,
+        // 내보내기가 캔버스를 못 읽고 src로 되돌아가는 경우에도 색이 맞게.
+        src: spot.color ? def.getSrc(spot.color) : def.src,
         x: spot.x * cardWidth,
         y: spot.y * cardHeight,
         width,
         height,
         rotation: 0,
         zIndex: zFrom + i,
+        ...(spot.color ? { color: spot.color } : {}),
       },
     ];
   });
