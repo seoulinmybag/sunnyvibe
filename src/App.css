@@ -56,6 +56,14 @@
 .toolbar-group {
   display: flex;
   gap: 8px;
+  align-items: center;
+}
+
+.toolbar-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px 2px;
+  background: var(--border);
 }
 
 .toolbar button,
@@ -190,10 +198,35 @@
   min-width: 0;
 }
 
+.panel-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
 .panel-title {
-  margin: 0 0 10px;
+  margin: 0;
   font-size: 15px;
   color: var(--text-h);
+}
+
+.panel-caret {
+  font-size: 11px;
+  color: var(--text);
+  opacity: 0.55;
+}
+
+.panel-body {
+  margin-top: 10px;
 }
 
 .tab-row {
@@ -266,6 +299,52 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+/* 앞면에 얹는 아이콘 세트 — 배경 템플릿(.template-row)과는 다른 패널이다 */
+.template-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.template-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* 카드와 같은 가로 16:11 — 비율 좌표를 그대로 얹으면 시안에 앉을 자리가 그대로 보인다 */
+.template-preview {
+  position: relative;
+  aspect-ratio: 16 / 11;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+}
+
+.template-preview img {
+  position: absolute;
+  height: auto;
+}
+
+.template-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+}
+
+.template-card-body strong {
+  font-size: 14px;
+  color: var(--text-h);
+}
+
+.template-card-body span {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text);
+  opacity: 0.8;
 }
 
 .template-swatch {
@@ -414,12 +493,14 @@
   border-radius: 4px;
 }
 
+/* the 32px gap has to stay bigger than ROTATE_ANCHOR_OFFSET + half an anchor (CanvasEditor),
+   otherwise these buttons sit on the rotate handle and eat the click meant for it */
 .selection-toolbar {
   position: absolute;
   display: flex;
   align-items: center;
   gap: 4px;
-  transform: translate(-100%, -130%);
+  transform: translate(-100%, calc(-100% - 32px));
   z-index: 10;
 }
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ICONS, ICON_CATEGORIES, iconsByCategory } from '../data/icons';
+import Panel from './Panel';
 
 interface Props {
   onAddIcon: (iconId: string) => void;
@@ -10,8 +11,7 @@ export default function IconLibrary({ onAddIcon }: Props) {
   const items = iconsByCategory(category);
 
   return (
-    <div className="panel">
-      <h3 className="panel-title">꾸미기</h3>
+    <Panel title="꾸미기">
       <div className="tab-row">
         {ICON_CATEGORIES.map((c) => (
           <button
@@ -37,6 +37,6 @@ export default function IconLibrary({ onAddIcon }: Props) {
         ))}
       </div>
       <p className="hint">아이콘을 클릭하면 청첩장 중앙에 추가돼요. 총 {ICONS.length}개</p>
-    </div>
+    </Panel>
   );
 }

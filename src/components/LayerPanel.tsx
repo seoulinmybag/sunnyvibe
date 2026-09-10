@@ -1,6 +1,7 @@
 import { getIconDef, isLibraryIcon } from '../data/icons';
 import { sortByZIndex } from '../lib/layering';
 import type { PlacedIcon, SelectedElement, TextField } from '../types';
+import Panel from './Panel';
 
 /** Which way a layer moves. 'forward'/'backward' step one place; 'front'/'back' jump to the end. */
 export type LayerMove = 'forward' | 'backward' | 'front' | 'back';
@@ -40,8 +41,7 @@ export default function LayerPanel({ icons, texts, selection, onSelect, onMove }
   const items = sortByZIndex(icons, texts).reverse();
 
   return (
-    <div className="panel">
-      <h3 className="panel-title">레이어</h3>
+    <Panel title="레이어" defaultOpen={false}>
       <p className="hint layer-hint">
         목록 위에 있을수록 앞에 보여요. 화살표로 순서를 바꾸고, ⌘(Ctrl)을 누른 채 누르면 여러 개를 함께 잡을 수 있어요.
       </p>
@@ -80,6 +80,6 @@ export default function LayerPanel({ icons, texts, selection, onSelect, onMove }
           );
         })}
       </ul>
-    </div>
+    </Panel>
   );
 }

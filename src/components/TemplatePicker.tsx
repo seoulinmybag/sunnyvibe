@@ -1,4 +1,5 @@
 import { TEMPLATES } from '../data/templates';
+import Panel from './Panel';
 
 interface Props {
   templateId: string;
@@ -9,8 +10,7 @@ interface Props {
 
 export default function TemplatePicker({ templateId, customColor, onChange, onCustomColor }: Props) {
   return (
-    <div className="panel">
-      <h3 className="panel-title">배경 템플릿</h3>
+    <Panel title="배경 템플릿">
       <div className="template-row">
         {TEMPLATES.map((t) => (
           <button
@@ -44,6 +44,6 @@ export default function TemplatePicker({ templateId, customColor, onChange, onCu
         </label>
       </div>
       <p className="hint">컬러 휠에서 원하는 배경색을 직접 선택할 수 있어요.</p>
-    </div>
+    </Panel>
   );
 }

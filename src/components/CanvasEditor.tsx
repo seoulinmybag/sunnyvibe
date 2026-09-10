@@ -316,6 +316,14 @@ function TextNode({
 /** How close (in canvas px) an element's centre has to get before it snaps to the card's centre. */
 const SNAP_DISTANCE = 8;
 
+/**
+ * How far above the selection Konva hangs the rotate handle. It has to stay well under the gap
+ * `.selection-toolbar` keeps from the selection (32px), or the floating buttons cover the handle
+ * and swallow the click — the handle never sticks out further than this offset plus half an
+ * anchor, at any rotation, so the two can't meet.
+ */
+const ROTATE_ANCHOR_OFFSET = 20;
+
 interface SelectionRect {
   x: number;
   y: number;
@@ -367,6 +375,8 @@ export default function CanvasEditor({
   const viewportRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [guides, setGuides] = useState({ vertical: false, horizontal: false });
+  /** 크기·회전을 끄는 동안은 떠 있는 버튼을 숨긴다 — 손잡이 근처에서 알짱거려 잡기 어렵다. */
+  const [transforming, setTransforming] = useState(false);
 
   /**
    * Nudges a dragged element onto the card's centre line when it comes close, and shows the
@@ -637,7 +647,10 @@ export default function CanvasEditor({
             <Transformer
               ref={trRef}
               rotateEnabled
+              rotateAnchorOffset={ROTATE_ANCHOR_OFFSET}
               flipEnabled={false}
+              onTransformStart={() => setTransforming(true)}
+              onTransformEnd={() => setTransforming(false)}
               boundBoxFunc={(oldBox, newBox) => (newBox.width < 12 || newBox.height < 12 ? oldBox : newBox)}
             />
           )}
@@ -682,7 +695,7 @@ export default function CanvasEditor({
         </div>
       )}
 
-      {interactive && !croppingIcon && !editingField && selectionRect && selected && (
+      {interactive && !transforming && !croppingIcon && !editingField && selectionRect && selected && (
         <div
           className="selection-toolbar"
           style={{

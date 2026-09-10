@@ -1,6 +1,7 @@
 import { FONT_GROUPS } from '../data/fonts';
 import { useState } from 'react';
 import type { SelectedElement, TextField } from '../types';
+import Panel from './Panel';
 
 interface Props {
   texts: TextField[];
@@ -34,8 +35,7 @@ export default function TextFieldsPanel({ texts, selected, onChange, onSelect, o
   }
 
   return (
-    <div className="panel">
-      <h3 className="panel-title">청첩장 문구</h3>
+    <Panel title="청첩장 문구">
       <div className="text-field-list">
         {texts.map((f) => (
           <label key={f.id} className={'text-field-item' + (selectedField?.id === f.id ? ' text-field-active' : '')}>
@@ -196,6 +196,6 @@ export default function TextFieldsPanel({ texts, selected, onChange, onSelect, o
           </div>
         </div>
       )}
-    </div>
+    </Panel>
   );
 }

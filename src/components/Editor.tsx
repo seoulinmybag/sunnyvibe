@@ -6,6 +6,7 @@ import ImageUpload from './ImageUpload';
 import TemplatePicker from './TemplatePicker';
 import TextFieldsPanel from './TextFieldsPanel';
 import LayerPanel from './LayerPanel';
+import TemplatePanel from './TemplatePanel';
 import PageSwitcher from './PageSwitcher';
 import Toolbar from './Toolbar';
 import logoUrl from '../assets/logo.png';
@@ -13,6 +14,8 @@ import { sortByZIndex } from '../lib/layering';
 import { ICONS } from '../data/icons';
 import { TEMPLATES } from '../data/templates';
 import { ORIENTATIONS } from '../data/orientation';
+import { FRONT_TEMPLATES } from '../data/frontTemplates';
+import { templateIcons } from '../lib/applyTemplate';
 import type { ConfirmPayload } from './Toolbar';
 import type { LayerMove, LayerTarget } from './LayerPanel';
 import { panelTypeOf, sidesFor } from '../types';
@@ -44,6 +47,11 @@ interface EditorProps {
 }
 
 let uidCounter = 0;
+
+/** 되돌리기로 거슬러 갈 수 있는 최대 칸 수. */
+const HISTORY_LIMIT = 100;
+/** 이 시간 안에 이어진 같은 종류의 변경은 되돌리기 한 칸으로 묶는다. */
+const COALESCE_MS = 700;
 
 /** New elements have to land above everything the auto-layout already placed (e.g. the 자막 caption at z 20). */
 function maxZIndex(pages: Pages): number {
@@ -87,11 +95,91 @@ export default function Editor({
   const zCounter = useRef(initialZ);
   const stageRef = useRef<Konva.Stage | null>(null);
 
-  function updateActivePage(updater: (p: PageState) => PageState) {
-    setPages((prev) => {
+  /**
+   * 되돌리기/다시 실행. 시안 전체(Pages)를 통째로 쌓는다 — 요소가 많아야 수십 개라
+   * 스냅샷이 가볍고, 어떤 편집이든 따로 취소 코드를 쓸 필요가 없다.
+   * StrictMode에서 setState 콜백이 두 번 불려도 안전하도록 히스토리는 콜백 밖에서 만진다.
+   */
+  const pagesRef = useRef(pages);
+  const history = useRef<{ past: Pages[]; future: Pages[] }>({ past: [], future: [] });
+  /** 같은 손놀림(연속 타자 등)을 한 칸으로 묶기 위한 직전 커밋 표시. */
+  const lastCommit = useRef<{ at: number; key: string } | null>(null);
+  const [depth, setDepth] = useState({ past: 0, future: 0 });
+
+  useEffect(() => {
+    pagesRef.current = pages;
+  }, [pages]);
+
+  /**
+   * 시안을 바꾸는 유일한 통로. coalesceKey가 같은 변경이 COALESCE_MS 안에 이어지면
+   * 히스토리를 새로 쌓지 않는다 — 글자 한 자마다 되돌리기 한 번이 되지 않게.
+   */
+  function commit(updater: (prev: Pages) => Pages, coalesceKey?: string) {
+    const prev = pagesRef.current;
+    const next = updater(prev);
+    if (next === prev) return;
+    const now = Date.now();
+    const merged =
+      !!coalesceKey && lastCommit.current?.key === coalesceKey && now - lastCommit.current.at < COALESCE_MS;
+    const h = history.current;
+    if (!merged) h.past = [...h.past, prev].slice(-HISTORY_LIMIT);
+    h.future = [];
+    lastCommit.current = coalesceKey ? { at: now, key: coalesceKey } : null;
+    pagesRef.current = next;
+    setDepth({ past: h.past.length, future: 0 });
+    setPages(next);
+  }
+
+  function undo() {
+    const h = history.current;
+    const prev = h.past[h.past.length - 1];
+    if (!prev) return;
+    h.past = h.past.slice(0, -1);
+    h.future = [...h.future, pagesRef.current];
+    lastCommit.current = null;
+    pagesRef.current = prev;
+    setDepth({ past: h.past.length, future: h.future.length });
+    setSelection([]);
+    setPages(prev);
+  }
+
+  function redo() {
+    const h = history.current;
+    const next = h.future[h.future.length - 1];
+    if (!next) return;
+    h.future = h.future.slice(0, -1);
+    h.past = [...h.past, pagesRef.current];
+    lastCommit.current = null;
+    pagesRef.current = next;
+    setDepth({ past: h.past.length, future: h.future.length });
+    setSelection([]);
+    setPages(next);
+  }
+
+  // ⌘/Ctrl+Z 되돌리기, ⌘+Shift+Z 또는 Ctrl+Y 다시 실행. 문구 칸에 커서가 있어도 같게
+  // 동작해야 "방금 한 것"이 하나로 이어진다 — 그래서 기본 실행취소는 막는다.
+  useEffect(() => {
+    if (readOnly) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      const key = e.key.toLowerCase();
+      if (key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if (key === 'y' || (key === 'z' && e.shiftKey)) {
+        e.preventDefault();
+        redo();
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  });
+
+  function updateActivePage(updater: (p: PageState) => PageState, coalesceKey?: string) {
+    commit((prev) => {
       const page = prev[activeSide];
       return page ? { ...prev, [activeSide]: updater(page) } : prev;
-    });
+    }, coalesceKey);
   }
 
   function handleSwitchSide(side: Side) {
@@ -171,11 +259,42 @@ export default function Editor({
   }
 
   function handleIconChange(uid: string, attrs: Partial<PlacedIcon>) {
-    updateActivePage((p) => ({ ...p, icons: p.icons.map((i) => (i.uid === uid ? { ...i, ...attrs } : i)) }));
+    updateActivePage(
+      (p) => ({ ...p, icons: p.icons.map((i) => (i.uid === uid ? { ...i, ...attrs } : i)) }),
+      `icon:${uid}:${Object.keys(attrs).join(',')}`,
+    );
   }
 
   function handleTextChange(id: string, attrs: Partial<TextField>) {
-    updateActivePage((p) => ({ ...p, texts: p.texts.map((t) => (t.id === id ? { ...t, ...attrs } : t)) }));
+    updateActivePage(
+      (p) => ({ ...p, texts: p.texts.map((t) => (t.id === id ? { ...t, ...attrs } : t)) }),
+      `text:${id}:${Object.keys(attrs).join(',')}`,
+    );
+  }
+
+  /**
+   * 미리 만들어 둔 아이콘 세트를 앞면에 얹는다. 지금 있는 것은 하나도 건드리지 않고
+   * 맨 위에 더하기만 하므로, 고객이 꾸며 둔 것이 초기화되지 않는다.
+   */
+  function handleApplyTemplate(templateId: string) {
+    const template = FRONT_TEMPLATES.find((t) => t.id === templateId);
+    if (!template) return;
+    const added = templateIcons(
+      template,
+      spec.displayWidth,
+      spec.displayHeight,
+      `tpl-${templateId}-${++uidCounter}`,
+      zCounter.current + 1,
+    );
+    if (!added.length) return;
+    zCounter.current += added.length;
+    commit((prev) => {
+      const front = prev.front;
+      return front ? { ...prev, front: { ...front, icons: [...front.icons, ...added] } } : prev;
+    });
+    // 얹은 자리가 앞면이니 보고 있는 면도 앞면으로 옮겨 준다
+    setSelection([]);
+    setActiveSide('front');
   }
 
   function handleDelete() {
@@ -265,6 +384,10 @@ export default function Editor({
         onSwitchSide={handleSwitchSide}
         onDelete={handleDelete}
         onReorder={handleReorder}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={depth.past > 0}
+        canRedo={depth.future > 0}
         stageRef={stageRef}
         readOnly={readOnly}
         pages={pages}
@@ -277,6 +400,7 @@ export default function Editor({
         {!readOnly && (
           <aside className="side-col">
             <IconLibrary onAddIcon={handleAddIcon} />
+            <TemplatePanel onApply={handleApplyTemplate} />
             <LayerPanel
               icons={activePage.icons}
               texts={activePage.texts}
@@ -312,7 +436,6 @@ export default function Editor({
         </section>
         {!readOnly && (
           <aside className="side-col">
-            <ImageUpload onUpload={handleUploadPhoto} />
             <TemplatePicker
               templateId={activePage.templateId}
               customColor={activePage.customColor}
@@ -326,6 +449,7 @@ export default function Editor({
               onSelect={(sel) => setSelection(sel ? [sel] : [])}
               onAddText={handleAddText}
             />
+            <ImageUpload onUpload={handleUploadPhoto} />
           </aside>
         )}
       </main>

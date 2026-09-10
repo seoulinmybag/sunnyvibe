@@ -24,6 +24,11 @@ interface Props {
   onSwitchSide: (side: Side) => void;
   onDelete: () => void;
   onReorder: (dir: 'front' | 'back') => void;
+  /** ⌘/Ctrl+Z 되돌리기, ⌘+Shift+Z · Ctrl+Y 다시 실행과 같은 동작. */
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
   stageRef: React.RefObject<Konva.Stage | null>;
   /** true once the order is confirmed — no more edits, only the casual PNG download stays available. */
   readOnly?: boolean;
@@ -56,6 +61,10 @@ export default function Toolbar({
   onSwitchSide,
   onDelete,
   onReorder,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
   stageRef,
   readOnly = false,
   pages,
@@ -197,6 +206,13 @@ export default function Toolbar({
             </button>
             <button disabled={!selected} className="danger" onClick={onDelete}>
               삭제
+            </button>
+            <span className="toolbar-divider" />
+            <button disabled={!canUndo} title="되돌리기 (⌘/Ctrl+Z)" onClick={onUndo}>
+              ↺ 되돌리기
+            </button>
+            <button disabled={!canRedo} title="다시 실행 (⌘+Shift+Z / Ctrl+Y)" onClick={onRedo}>
+              ↻ 다시 실행
             </button>
           </>
         )}
