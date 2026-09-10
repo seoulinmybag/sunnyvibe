@@ -43,7 +43,9 @@ function artIcon(folder: string, category: string, spec: ArtSpec): IconDef {
   };
 }
 
-export const ICON_CATEGORIES = ART_CATEGORIES.map((c) => c.category);
+// hidden 갈래는 고객이 고르는 목록에 띄우지 않는다 — 그래도 ICONS에는 들어 있어서
+// 배치된 아이콘이 id만으로 그림을 찾아온다.
+export const ICON_CATEGORIES = ART_CATEGORIES.filter((c) => !c.hidden).map((c) => c.category);
 
 export const ICONS: IconDef[] = ART_CATEGORIES.flatMap((c) => c.items.map((spec) => artIcon(c.folder, c.category, spec)));
 

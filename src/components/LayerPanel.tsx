@@ -1,4 +1,4 @@
-import { getIconDef, isLibraryIcon } from '../data/icons';
+import { getIconDef, getIconSrc, isLibraryIcon } from '../data/icons';
 import { sortByZIndex } from '../lib/layering';
 import type { PlacedIcon, SelectedElement, TextField } from '../types';
 import Panel from './Panel';
@@ -59,7 +59,7 @@ export default function LayerPanel({ icons, texts, selection, onSelect, onMove }
                 onClick={(e) => onSelect(target, e.ctrlKey || e.metaKey || e.shiftKey)}
               >
                 {item.kind === 'icon' ? (
-                  <img src={item.data.src} alt="" draggable={false} />
+                  <img src={getIconSrc(item.data.iconId, item.data.color) ?? item.data.src} alt="" draggable={false} />
                 ) : (
                   <span className="layer-text-badge">T</span>
                 )}

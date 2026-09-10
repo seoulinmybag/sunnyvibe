@@ -238,7 +238,7 @@ export default function AdminNewOrder() {
                 <input type="radio" checked={deceasedStyle === 'hanja'} onChange={() => setDeceasedStyle('hanja')} /> 故 (한자)
               </label>
               <label>
-                <input type="radio" checked={deceasedStyle === 'flower'} onChange={() => setDeceasedStyle('flower')} /> ✿ (국화꽃)
+                <input type="radio" checked={deceasedStyle === 'flower'} onChange={() => setDeceasedStyle('flower')} /> 국화꽃 (그림)
               </label>
             </div>
           </div>

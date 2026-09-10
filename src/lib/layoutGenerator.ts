@@ -1,7 +1,7 @@
 import { ORIENTATIONS, ptToPx } from '../data/orientation.js';
 import { TEMPLATES } from '../data/templates.js';
 import { buildCalendarSvg, parseWeddingDate } from './calendar.js';
-import type { PageState, Pages, PlacedIcon, TextField } from '../types.js';
+import type { PageState, Pages, PlacedIcon, Side, TextField } from '../types.js';
 
 const TEMPLATE = TEMPLATES[0]; // 화이트
 const SPEC = ORIENTATIONS.landscape;
@@ -33,6 +33,56 @@ const QR_PRINT_MM = 14;
 
 export const DECEASED_MARKS = { hanja: '故', flower: '✿' } as const;
 export type DeceasedStyle = keyof typeof DECEASED_MARKS;
+
+/**
+ * 국화꽃은 글자가 아니라 그림이라 혼주 줄 안에 끼워 넣을 수가 없다. 대신 이름 앞에
+ * 빈칸 네 개를 두고 그 자리에 아이콘을 얹는다 — 혼주가 두 분 다 고인이면 각자 이름 앞에
+ * 하나씩 붙는다. 빈칸 네 개가 이어 나오는 경우는 달리 없으니 자리를 되찾기 쉽다.
+ */
+const FLOWER_SLOT = '    ';
+const FLOWER_ICON_ID = 'system-01';
+/**
+ * 마크의 지름과 왼쪽 여백 — 글자 크기에 대한 비율. 빈칸 네 개가 1.004em이니 그림을
+ * 0.75em으로 두면 이름과의 사이가 0.22em쯤 남아, 예전 `✿ 이름`의 간격과 비슷해진다.
+ */
+const FLOWER_EM = 0.75;
+const FLOWER_INSET_EM = 0.03;
+
+/**
+ * Pretendard 글자 한 자의 가로폭(em). 이 폰트는 커닝을 하지 않아서 글자폭을 그냥 더하면
+ * 캔버스가 실제로 재는 값과 맞아떨어진다(`故 김영수, 박정희의 아들` = 9.6541em, 실측 동일).
+ * 국화꽃을 이름 바로 앞에 놓으려면 주문 생성 시점(Node, 캔버스 없음)에 폭을 알아야 해서 둔다.
+ */
+const EM = {
+  hangul: 0.8643,
+  space: 0.2509,
+  comma: 0.2577,
+  digit: 0.5844,
+  lower: 0.4713,
+  upper: 0.5942,
+  other: 0.5,
+} as const;
+
+function charEm(ch: string): number {
+  const c = ch.codePointAt(0)!;
+  if (ch === ' ') return EM.space;
+  if (ch === ',' || ch === '.' || ch === '·') return EM.comma;
+  if (c >= 0x30 && c <= 0x39) return EM.digit;
+  if (c >= 0x61 && c <= 0x7a) return EM.lower;
+  if (c >= 0x41 && c <= 0x5a) return EM.upper;
+  // 한글 음절·자모, 한자, 그 밖의 전각은 전부 한 폭
+  if (c >= 0x1100 && c <= 0x11ff) return EM.hangul;
+  if (c >= 0x3000 && c <= 0x9fff) return EM.hangul;
+  if (c >= 0xac00 && c <= 0xd7a3) return EM.hangul;
+  if (c >= 0xf900 && c <= 0xfaff) return EM.hangul;
+  return EM.other;
+}
+
+function textEm(s: string): number {
+  let sum = 0;
+  for (const ch of s) sum += charEm(ch);
+  return sum;
+}
 
 export interface ParentInfo {
   name: string;
@@ -145,7 +195,9 @@ function imageInBox(uid: string, src: string, natural: ImageSize | null, box: Bo
 function markedName(parent: ParentInfo, style: DeceasedStyle): string {
   const name = parent.name.trim();
   if (!name) return '';
-  return parent.deceased ? `${DECEASED_MARKS[style]} ${name}` : name;
+  if (!parent.deceased) return name;
+  // 국화꽃은 나중에 그림으로 얹는다 — 여기서는 자리만 비워 둔다
+  return style === 'flower' ? `${FLOWER_SLOT}${name}` : `${DECEASED_MARKS[style]} ${name}`;
 }
 
 /** '송건철, 유지선의 아들' — 한 분만 입력해도 그 분만 들어간다. */
@@ -498,6 +550,48 @@ function buildOuterBack(opts: LayoutOptions): PageState {
   return { icons, texts, templateId: TEMPLATE.id, customColor: null };
 }
 
+/**
+ * 혼주 줄에 비워 둔 자리마다 국화꽃을 하나씩 얹는다. 폭을 글자표로 재서 이름 바로 앞에
+ * 놓으므로, 한 줄에 고인이 두 분이면 두 개가 각자 이름 앞에 붙는다.
+ *
+ * 한 줄로 떨어지는 문구를 전제한다 — 혼주 줄은 칸보다 한참 짧아서 접히지 않는다.
+ */
+function placeFlowerMarks(page: PageState, zFrom: number): PageState {
+  const marks: PlacedIcon[] = [];
+  const texts = page.texts.map((field) => {
+    if (!field.text.includes(FLOWER_SLOT)) return field;
+    const size = field.fontSize * FLOWER_EM;
+    const lineEm = textEm(field.text);
+    // 칸 안에서 글자가 실제로 시작하는 자리
+    const startX =
+      field.align === 'center'
+        ? field.x + (field.width - lineEm * field.fontSize) / 2
+        : field.align === 'right'
+          ? field.x + field.width - lineEm * field.fontSize
+          : field.x;
+    let from = 0;
+    for (;;) {
+      const at = field.text.indexOf(FLOWER_SLOT, from);
+      if (at === -1) break;
+      marks.push({
+        uid: `deceased-${field.id}-${marks.length}`,
+        iconId: FLOWER_ICON_ID,
+        src: '', // 카탈로그에 있는 아이콘이라 브라우저가 id만 보고 그림을 찾아온다
+        x: startX + (textEm(field.text.slice(0, at)) + FLOWER_INSET_EM) * field.fontSize,
+        y: field.y + (field.fontSize - size) / 2,
+        width: size,
+        height: size,
+        rotation: 0,
+        color: field.fill,
+        zIndex: zFrom + marks.length,
+      });
+      from = at + FLOWER_SLOT.length;
+    }
+    return field;
+  });
+  return marks.length ? { ...page, icons: [...page.icons, ...marks], texts } : page;
+}
+
 export function buildInitialPages(rawOpts: LayoutOptions): Pages {
   // 약도는 1단 전용, 2단 외지 뒷면은 언제나 달력이다
   const opts: LayoutOptions = {
@@ -506,11 +600,20 @@ export function buildInitialPages(rawOpts: LayoutOptions): Pages {
     hasCalendar: rawOpts.panelType === 'fold' ? true : rawOpts.hasCalendar,
   };
   const front = buildFront(opts);
-  if (opts.panelType !== 'fold') return { front, back: buildSingleBack(opts) };
-  return {
-    front,
-    'inner-top': buildInnerTop(opts),
-    'inner-bottom': buildInnerBottom(opts),
-    back: buildOuterBack(opts),
-  };
+  const pages: Pages =
+    opts.panelType !== 'fold'
+      ? { front, back: buildSingleBack(opts) }
+      : {
+          front,
+          'inner-top': buildInnerTop(opts),
+          'inner-bottom': buildInnerBottom(opts),
+          back: buildOuterBack(opts),
+        };
+  if (opts.deceasedStyle !== 'flower') return pages;
+  // 국화꽃은 자막(z 20)보다 위, 고객이 나중에 얹는 것들보다는 아래에 둔다
+  const withMarks: Pages = {};
+  for (const [side, page] of Object.entries(pages)) {
+    withMarks[side as Side] = page ? placeFlowerMarks(page, 30) : page;
+  }
+  return withMarks;
 }

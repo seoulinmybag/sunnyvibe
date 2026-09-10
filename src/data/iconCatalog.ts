@@ -2,7 +2,24 @@
 // 아이콘을 빼거나 이름을 바꿀 때는 여기와 src/assets/icons/ 의 파일을 같이 손봐야 한다.
 import type { ArtSpec } from './icons';
 
-export const ART_CATEGORIES: Array<{ folder: string; category: string; items: ArtSpec[] }> = [
+export const ART_CATEGORIES: Array<{ folder: string; category: string; hidden?: boolean; items: ArtSpec[] }> = [
+  {
+    // 고인 표시에 쓰는 국화꽃. 꾸미기 목록에는 띄우지 않지만 아이콘으로는 등록해 둬야
+    // 브라우저가 id만 보고 그림을 찾아 준다(시안 데이터에 이미지가 실리지 않는다).
+    "folder": "system",
+    "category": "시스템",
+    "hidden": true,
+    "items": [
+      {
+        "slug": "system-01",
+        "label": "국화꽃",
+        "width": 400,
+        "height": 400,
+        "recolorable": true,
+        "defaultColor": "#000000"
+      }
+    ]
+  },
   {
     "folder": "wedding",
     "category": "웨딩",
