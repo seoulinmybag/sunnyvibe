@@ -140,8 +140,11 @@ export default function Toolbar({
         const node = stage!.findOne('#' + icon.uid) as Konva.Image | undefined;
         const img = node?.image() as HTMLImageElement | undefined;
         if (!img || img.naturalWidth <= 0 || img.naturalHeight <= 0) return null;
-        if (icon.src.startsWith('data:')) {
-          return { width: img.naturalWidth, height: img.naturalHeight, dataUri: icon.src };
+        // icon.src가 아니라 실제로 그려진 그림을 봐야 한다. 색을 바꾼 아이콘은 칠한 그림으로
+        // 그려지는데, 빌드가 작은 PNG를 data URI로 박아 넣으면 icon.src도 data:로 시작해서
+        // 칠하기 전 원본 색이 SVG로 나가 버린다.
+        if (img.src.startsWith('data:')) {
+          return { width: img.naturalWidth, height: img.naturalHeight, dataUri: img.src };
         }
         try {
           const canvas = document.createElement('canvas');
