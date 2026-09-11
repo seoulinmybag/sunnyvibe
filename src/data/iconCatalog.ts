@@ -160,16 +160,10 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; hidden?: 
     "category": "웨딩 3D",
     "items": [
       {
-        "slug": "wedding3d-01",
-        "label": "그린 하트",
-        "width": 400,
-        "height": 353
-      },
-      {
-        "slug": "wedding3d-02",
-        "label": "노란색 하트",
-        "width": 400,
-        "height": 362
+        "slug": "wedding3d-16",
+        "label": "다이아몬드링",
+        "width": 340,
+        "height": 400
       },
       {
         "slug": "wedding3d-03",
@@ -179,49 +173,43 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; hidden?: 
       },
       {
         "slug": "wedding3d-04",
-        "label": "반지를 교환하는 웨딩 한국인 커플, 안경삭제",
+        "label": "반지 교환",
         "width": 400,
         "height": 379
       },
       {
         "slug": "wedding3d-05",
-        "label": "반지를 교환하는 웨딩 한국인 커플",
+        "label": "반지 교환 정면",
         "width": 400,
         "height": 369
       },
       {
         "slug": "wedding3d-06",
-        "label": "베일 쓴 신부",
+        "label": "베일 신부",
         "width": 346,
         "height": 400
       },
       {
-        "slug": "wedding3d-07",
-        "label": "볼에 키스하는 한국인 웨딩 커플",
+        "slug": "wedding3d-18",
+        "label": "부케",
         "width": 400,
-        "height": 367
-      },
-      {
-        "slug": "wedding3d-08",
-        "label": "볼에 키스하는 한국인 커플",
-        "width": 400,
-        "height": 382
+        "height": 399
       },
       {
         "slug": "wedding3d-09",
-        "label": "부케를 던지는 신부",
+        "label": "부케 던지기",
         "width": 400,
         "height": 377
       },
       {
         "slug": "wedding3d-10",
-        "label": "부케를 던지는 한국인 신부",
+        "label": "부케와 신부",
         "width": 395,
         "height": 400
       },
       {
         "slug": "wedding3d-11",
-        "label": "샴페인 병",
+        "label": "샴페인",
         "width": 400,
         "height": 399
       },
@@ -232,40 +220,40 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; hidden?: 
         "height": 400
       },
       {
+        "slug": "wedding3d-35",
+        "label": "신랑",
+        "width": 373,
+        "height": 400
+      },
+      {
+        "slug": "wedding3d-33",
+        "label": "신랑2",
+        "width": 328,
+        "height": 400
+      },
+      {
         "slug": "wedding3d-13",
-        "label": "손잡은 한국인 신랑신부",
+        "label": "신랑신부",
         "width": 400,
         "height": 391
       },
       {
         "slug": "wedding3d-14",
-        "label": "신부를 안아 든 한국인 신랑",
+        "label": "신랑신부2",
         "width": 390,
         "height": 400
       },
       {
-        "slug": "wedding3d-15",
-        "label": "연분홍색 하트",
-        "width": 400,
-        "height": 367
-      },
-      {
-        "slug": "wedding3d-16",
-        "label": "웨딩 다이아몬드 링",
+        "slug": "wedding3d-21",
+        "label": "신부",
         "width": 340,
         "height": 400
       },
       {
-        "slug": "wedding3d-17",
-        "label": "웨딩 보석 왕관 티아라",
-        "width": 400,
-        "height": 317
-      },
-      {
-        "slug": "wedding3d-18",
-        "label": "웨딩 부케",
-        "width": 400,
-        "height": 399
+        "slug": "wedding3d-34",
+        "label": "신부2",
+        "width": 378,
+        "height": 400
       },
       {
         "slug": "wedding3d-19",
@@ -274,15 +262,9 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; hidden?: 
         "height": 400
       },
       {
-        "slug": "wedding3d-20",
-        "label": "웨딩 핑크 케이크",
-        "width": 400,
-        "height": 389
-      },
-      {
-        "slug": "wedding3d-21",
-        "label": "웨딩드레스 신부",
-        "width": 340,
+        "slug": "wedding3d-27",
+        "label": "웨딩 케이크",
+        "width": 394,
         "height": 400
       },
       {
@@ -298,28 +280,34 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; hidden?: 
         "height": 400
       },
       {
-        "slug": "wedding3d-24",
-        "label": "웨딩슈즈",
-        "width": 400,
-        "height": 380
-      },
-      {
         "slug": "wedding3d-25",
         "label": "웨딩슈즈",
         "width": 400,
         "height": 349
       },
       {
+        "slug": "wedding3d-24",
+        "label": "웨딩슈즈2",
+        "width": 400,
+        "height": 380
+      },
+      {
         "slug": "wedding3d-26",
-        "label": "웨딩카 오픈카",
+        "label": "웨딩카",
         "width": 398,
         "height": 400
       },
       {
-        "slug": "wedding3d-27",
-        "label": "웨딩케이크",
-        "width": 394,
-        "height": 400
+        "slug": "wedding3d-08",
+        "label": "키스",
+        "width": 400,
+        "height": 382
+      },
+      {
+        "slug": "wedding3d-07",
+        "label": "키스1",
+        "width": 400,
+        "height": 367
       },
       {
         "slug": "wedding3d-28",
@@ -334,16 +322,16 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; hidden?: 
         "height": 313
       },
       {
-        "slug": "wedding3d-30",
-        "label": "하늘색 하트",
+        "slug": "wedding3d-17",
+        "label": "티아라2",
         "width": 400,
-        "height": 365
+        "height": 317
       },
       {
-        "slug": "wedding3d-31",
-        "label": "하얀색 하트가 반으로 쪼개진 것. 갈라진 것 말고, 하트 반쪽. 반쪽 하트",
+        "slug": "wedding3d-20",
+        "label": "핑크 케이크",
         "width": 400,
-        "height": 361
+        "height": 389
       },
       {
         "slug": "wedding3d-32",
@@ -352,32 +340,44 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; hidden?: 
         "height": 355
       },
       {
-        "slug": "wedding3d-33",
-        "label": "한국인 신랑",
-        "width": 328,
-        "height": 400
+        "slug": "wedding3d-02",
+        "label": "하트 노랑",
+        "width": 400,
+        "height": 362
       },
       {
-        "slug": "wedding3d-34",
-        "label": "한국인 웨딩드레스 신부",
-        "width": 378,
-        "height": 400
+        "slug": "wedding3d-15",
+        "label": "하트 연분홍",
+        "width": 400,
+        "height": 367
       },
       {
-        "slug": "wedding3d-35",
-        "label": "한국인 턱시도 신랑",
-        "width": 373,
-        "height": 400
+        "slug": "wedding3d-01",
+        "label": "하트 초록",
+        "width": 400,
+        "height": 353
+      },
+      {
+        "slug": "wedding3d-30",
+        "label": "하트 하늘색",
+        "width": 400,
+        "height": 365
+      },
+      {
+        "slug": "wedding3d-31",
+        "label": "하트 화이트",
+        "width": 400,
+        "height": 361
       },
       {
         "slug": "wedding3d-36",
-        "label": "화이트 웨딩 부케",
+        "label": "화이트 부케",
         "width": 361,
         "height": 400
       },
       {
         "slug": "wedding3d-37",
-        "label": "흰색 부케를 던지는 한국인 신부",
+        "label": "화이트 부케 신부",
         "width": 400,
         "height": 391
       }
