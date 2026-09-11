@@ -20,9 +20,10 @@ export default function Panel({ title, defaultOpen = true, children }: Props) {
         onClick={() => setOpen((prev) => !prev)}
       >
         <h3 className="panel-title">{title}</h3>
-        <span className="panel-caret" aria-hidden="true">
-          {open ? '▾' : '▸'}
-        </span>
+        {/* 닫히면 오른쪽, 열리면 아래를 가리키는 세모 */}
+        <svg className={'panel-caret' + (open ? ' panel-caret-open' : '')} viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M5 2.5 L12.5 8 L5 13.5 Z" />
+        </svg>
       </button>
       {open && <div className="panel-body">{children}</div>}
     </div>

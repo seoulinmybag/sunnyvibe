@@ -220,9 +220,20 @@
 }
 
 .panel-caret {
-  font-size: 11px;
-  color: var(--text);
-  opacity: 0.55;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: var(--text-h);
+  opacity: 0.7;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.panel-caret-open {
+  transform: rotate(90deg);
+}
+
+.panel-toggle:hover .panel-caret {
+  opacity: 1;
 }
 
 .panel-body {
@@ -305,22 +316,38 @@
 .template-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .template-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  overflow: hidden;
   background: var(--bg);
 }
 
-/* 카드와 같은 가로 16:11 — 비율 좌표를 그대로 얹으면 시안에 앉을 자리가 그대로 보인다 */
+/* 미리보기는 카드 폭의 절반만 쓰고 옆에 이름과 설명을 붙인다 */
+.template-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 카드와 같은 가로 16:11 — 비율 좌표를 그대로 얹으면 시안에 앉을 자리가 그대로 보인다.
+   화면이 좁아 사이드 패널이 한 줄로 넓어지면 절반도 커지므로 상한을 둔다 */
 .template-preview {
   position: relative;
+  flex: none;
+  width: 50%;
+  max-width: 180px;
   aspect-ratio: 16 / 11;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 6px;
   background: #fff;
-  border-bottom: 1px solid var(--border);
 }
 
 .template-preview img {
@@ -328,21 +355,21 @@
   height: auto;
 }
 
-.template-card-body {
+.template-card-text {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px;
+  gap: 4px;
+  min-width: 0;
 }
 
-.template-card-body strong {
+.template-card-text strong {
   font-size: 14px;
   color: var(--text-h);
 }
 
-.template-card-body span {
-  font-size: 12px;
-  line-height: 1.5;
+.template-card-text span {
+  font-size: 11px;
+  line-height: 1.45;
   color: var(--text);
   opacity: 0.8;
 }

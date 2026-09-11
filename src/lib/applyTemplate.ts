@@ -23,9 +23,8 @@ export function templateIcons(
       {
         uid: `${uidPrefix}-${i}`,
         iconId: spot.iconId,
-        // 색을 지정한 아이콘은 그 색으로 그려 둔다 — 캔버스는 color로 다시 칠하지만,
-        // 내보내기가 캔버스를 못 읽고 src로 되돌아가는 경우에도 색이 맞게.
-        src: spot.color ? def.getSrc(spot.color) : def.src,
+        // 색은 color로만 들고 간다 — 캔버스가 칠해서 그리고, 내보내기는 칠해진 캔버스 그림을 읽는다
+        src: def.src,
         x: spot.x * cardWidth,
         y: spot.y * cardHeight,
         width,

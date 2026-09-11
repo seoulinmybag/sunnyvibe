@@ -383,6 +383,246 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; hidden?: 
         "height": 400,
         "recolorable": true,
         "defaultColor": "#f1bdd8"
+      },
+      {
+        "slug": "deco-01",
+        "label": "가느다란반짝임",
+        "width": 163,
+        "height": 166,
+        "recolorable": true,
+        "defaultColor": "#68c9fd"
+      },
+      {
+        "slug": "deco-02",
+        "label": "네갈래반짝임",
+        "width": 135,
+        "height": 169,
+        "recolorable": true,
+        "defaultColor": "#fd86c3"
+      },
+      {
+        "slug": "deco-03",
+        "label": "반짝임모음",
+        "width": 161,
+        "height": 180,
+        "recolorable": true,
+        "defaultColor": "#b78bf8"
+      },
+      {
+        "slug": "deco-04",
+        "label": "빈별",
+        "width": 159,
+        "height": 170,
+        "recolorable": true,
+        "defaultColor": "#fd6b45"
+      },
+      {
+        "slug": "deco-05",
+        "label": "색칠별",
+        "width": 167,
+        "height": 164,
+        "recolorable": true,
+        "defaultColor": "#fdc907"
+      },
+      {
+        "slug": "deco-06",
+        "label": "작은별모음",
+        "width": 183,
+        "height": 163,
+        "recolorable": true,
+        "defaultColor": "#69cbfd"
+      },
+      {
+        "slug": "deco-07",
+        "label": "빈하트",
+        "width": 159,
+        "height": 173,
+        "recolorable": true,
+        "defaultColor": "#fd85c2"
+      },
+      {
+        "slug": "deco-08",
+        "label": "색칠하트",
+        "width": 115,
+        "height": 117,
+        "recolorable": true,
+        "defaultColor": "#fc6b46"
+      },
+      {
+        "slug": "deco-09",
+        "label": "하트모음",
+        "width": 161,
+        "height": 160,
+        "recolorable": true,
+        "defaultColor": "#f8abb5"
+      },
+      {
+        "slug": "deco-10",
+        "label": "리본매듭",
+        "width": 168,
+        "height": 144,
+        "recolorable": true,
+        "defaultColor": "#fd86c3"
+      },
+      {
+        "slug": "deco-11",
+        "label": "긴꼬리리본",
+        "width": 141,
+        "height": 190,
+        "recolorable": true,
+        "defaultColor": "#79d2fd"
+      },
+      {
+        "slug": "deco-12",
+        "label": "리본배너",
+        "width": 204,
+        "height": 103,
+        "recolorable": true,
+        "defaultColor": "#7adaab"
+      },
+      {
+        "slug": "deco-13",
+        "label": "소용돌이",
+        "width": 147,
+        "height": 158,
+        "recolorable": true,
+        "defaultColor": "#fd6b44"
+      },
+      {
+        "slug": "deco-14",
+        "label": "소용돌이모음",
+        "width": 169,
+        "height": 177,
+        "recolorable": true,
+        "defaultColor": "#b68af7"
+      },
+      {
+        "slug": "deco-15",
+        "label": "고리꼬불선",
+        "width": 191,
+        "height": 127,
+        "recolorable": true,
+        "defaultColor": "#fed428"
+      },
+      {
+        "slug": "deco-16",
+        "label": "물결밑줄",
+        "width": 178,
+        "height": 80,
+        "recolorable": true,
+        "defaultColor": "#69cbfd"
+      },
+      {
+        "slug": "deco-17",
+        "label": "이중밑줄",
+        "width": 189,
+        "height": 93,
+        "recolorable": true,
+        "defaultColor": "#fd86c3"
+      },
+      {
+        "slug": "deco-18",
+        "label": "지그재그선",
+        "width": 189,
+        "height": 76,
+        "recolorable": true,
+        "defaultColor": "#fc6b44"
+      },
+      {
+        "slug": "deco-19",
+        "label": "점선곡선",
+        "width": 177,
+        "height": 117,
+        "recolorable": true,
+        "defaultColor": "#b98bf7"
+      },
+      {
+        "slug": "deco-20",
+        "label": "꼬리화살표",
+        "width": 179,
+        "height": 97,
+        "recolorable": true,
+        "defaultColor": "#fd6b45"
+      },
+      {
+        "slug": "deco-21",
+        "label": "양방향화살표",
+        "width": 201,
+        "height": 79,
+        "recolorable": true,
+        "defaultColor": "#85ddb3"
+      },
+      {
+        "slug": "deco-22",
+        "label": "번개",
+        "width": 111,
+        "height": 199,
+        "recolorable": true,
+        "defaultColor": "#fed638"
+      },
+      {
+        "slug": "deco-23",
+        "label": "강조선모음",
+        "width": 184,
+        "height": 130,
+        "recolorable": true,
+        "defaultColor": "#6acdfe"
+      },
+      {
+        "slug": "deco-24",
+        "label": "느낌표",
+        "width": 59,
+        "height": 187,
+        "recolorable": true,
+        "defaultColor": "#fd85c4"
+      },
+      {
+        "slug": "deco-25",
+        "label": "물음표",
+        "width": 90,
+        "height": 184,
+        "recolorable": true,
+        "defaultColor": "#b88af8"
+      },
+      {
+        "slug": "deco-26",
+        "label": "동그라미테두리",
+        "width": 201,
+        "height": 150,
+        "recolorable": true,
+        "defaultColor": "#fc6b45"
+      },
+      {
+        "slug": "deco-27",
+        "label": "네모테두리",
+        "width": 187,
+        "height": 141,
+        "recolorable": true,
+        "defaultColor": "#69cbfd"
+      },
+      {
+        "slug": "deco-28",
+        "label": "말풍선",
+        "width": 195,
+        "height": 165,
+        "recolorable": true,
+        "defaultColor": "#7adbac"
+      },
+      {
+        "slug": "deco-29",
+        "label": "색종이조각",
+        "width": 171,
+        "height": 171,
+        "recolorable": true,
+        "defaultColor": "#fedc5a"
+      },
+      {
+        "slug": "deco-30",
+        "label": "크레용색칠",
+        "width": 164,
+        "height": 135,
+        "recolorable": true,
+        "defaultColor": "#ba8bf7"
       }
     ]
   },

@@ -52,8 +52,6 @@ let uidCounter = 0;
 const HISTORY_LIMIT = 100;
 /** 이 시간 안에 이어진 같은 종류의 변경은 되돌리기 한 칸으로 묶는다. */
 const COALESCE_MS = 700;
-/** 앞면 하단 자막 슬롯. 템플릿을 얹어도 이것만은 위에 남는다. */
-const CAPTION_FIELD_ID = 'title';
 
 /** New elements have to land above everything the auto-layout already placed (e.g. the 자막 caption at z 20). */
 function maxZIndex(pages: Pages): number {
@@ -281,6 +279,8 @@ export default function Editor({
   function handleApplyTemplate(templateId: string) {
     const template = FRONT_TEMPLATES.find((t) => t.id === templateId);
     if (!template) return;
+    const current = pagesRef.current.front;
+    if (!current) return;
     const added = templateIcons(
       template,
       spec.displayWidth,
@@ -289,10 +289,13 @@ export default function Editor({
       zCounter.current + 1,
     );
     if (!added.length) return;
-    // 자막은 주문마다 다르게 들어가는 자리라 템플릿에는 없다. 얹은 아이콘이 자막을 덮지
-    // 않도록 자막만 맨 위로 올려 준다.
-    const captionZ = zCounter.current + added.length + 1;
-    zCounter.current = captionZ;
+    // 이름·생년월일·자막 같은 글자는 전부 얹은 아이콘 위로 올린다 — 장식이 글을 가리면 안 된다.
+    // 글자끼리의 앞뒤 순서는 그대로 둔다.
+    const textBase = zCounter.current + added.length + 1;
+    const textZ = new Map(
+      [...current.texts].sort((a, b) => a.zIndex - b.zIndex).map((t, i) => [t.id, textBase + i] as const),
+    );
+    zCounter.current = textBase + current.texts.length;
     commit((prev) => {
       const front = prev.front;
       if (!front) return prev;
@@ -301,7 +304,7 @@ export default function Editor({
         front: {
           ...front,
           icons: [...front.icons, ...added],
-          texts: front.texts.map((t) => (t.id === CAPTION_FIELD_ID ? { ...t, zIndex: captionZ } : t)),
+          texts: front.texts.map((t) => ({ ...t, zIndex: textZ.get(t.id) ?? t.zIndex })),
         },
       };
     });
