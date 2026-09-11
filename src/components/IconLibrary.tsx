@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ICONS, ICON_CATEGORIES, iconsByCategory } from '../data/icons';
+import { ICON_CATEGORIES, iconsByCategory } from '../data/icons';
 import Panel from './Panel';
 
 interface Props {
@@ -36,7 +36,11 @@ export default function IconLibrary({ onAddIcon }: Props) {
           </button>
         ))}
       </div>
-      <p className="hint">아이콘을 클릭하면 청첩장 중앙에 추가돼요. 총 {ICONS.length}개</p>
+      {/* 숨긴 갈래(국화꽃·보관)는 세지 않는다 */}
+      <p className="hint">
+        아이콘을 클릭하면 청첩장 중앙에 추가돼요. 총{' '}
+        {ICON_CATEGORIES.reduce((sum, category) => sum + iconsByCategory(category).length, 0)}개
+      </p>
     </Panel>
   );
 }

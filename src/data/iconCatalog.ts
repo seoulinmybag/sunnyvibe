@@ -21,6 +21,33 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; hidden?: 
     ]
   },
   {
+    // 고객 목록에서 뺀 아이콘. 파일과 id를 남겨 둬야 이미 이 아이콘을 쓴 시안이 깨지지 않는다.
+    "folder": "animal",
+    "category": "보관-동물",
+    "hidden": true,
+    "items": [
+      {
+        "slug": "animal-15",
+        "label": "여우2",
+        "width": 400,
+        "height": 352
+      }
+    ]
+  },
+  {
+    "folder": "food",
+    "category": "보관-음식",
+    "hidden": true,
+    "items": [
+      {
+        "slug": "food-06",
+        "label": "김밥앤초밥",
+        "width": 400,
+        "height": 334
+      }
+    ]
+  },
+  {
     "folder": "wedding",
     "category": "웨딩",
     "items": [
@@ -859,10 +886,10 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; hidden?: 
         "height": 400
       },
       {
-        "slug": "animal-15",
-        "label": "여우2",
-        "width": 400,
-        "height": 352
+        "slug": "animal-22",
+        "label": "여우",
+        "width": 357,
+        "height": 400
       },
       {
         "slug": "animal-17",
@@ -923,12 +950,6 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; hidden?: 
         "label": "기본푸딩",
         "width": 400,
         "height": 283
-      },
-      {
-        "slug": "food-06",
-        "label": "김밥앤초밥",
-        "width": 400,
-        "height": 334
       },
       {
         "slug": "food-07",
@@ -1067,6 +1088,12 @@ export const ART_CATEGORIES: Array<{ folder: string; category: string; hidden?: 
         "label": "짬뽕",
         "width": 400,
         "height": 300
+      },
+      {
+        "slug": "food-44",
+        "label": "초밥",
+        "width": 400,
+        "height": 294
       },
       {
         "slug": "food-32",
