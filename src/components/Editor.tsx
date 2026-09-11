@@ -46,12 +46,28 @@ interface EditorProps {
   saving?: boolean;
 }
 
-let uidCounter = 0;
+/**
+ * 새 요소 id의 번호. 0부터 세면 새로고침 뒤 저장된 시안의 `icon-1` 같은 id와 겹쳐 선택·변형이
+ * 엉뚱한 요소에 붙는다. 지금 시각에서 시작하면 이전 세션에서 만든 번호와 겹치지 않는다.
+ */
+let uidCounter = Date.now();
 
 /** 되돌리기로 거슬러 갈 수 있는 최대 칸 수. */
 const HISTORY_LIMIT = 100;
 /** 이 시간 안에 이어진 같은 종류의 변경은 되돌리기 한 칸으로 묶는다. */
 const COALESCE_MS = 700;
+
+/** 템플릿이 얹은 아이콘인지 — uid가 `tpl-<템플릿id>-<번호>-<순번>` 꼴이다. */
+function isFromTemplate(uid: string, templateId: string): boolean {
+  const head = `tpl-${templateId}-`;
+  // 뒤가 숫자-숫자인지까지 봐야 `flower`가 `flower-field`의 아이콘을 잡지 않는다
+  return uid.startsWith(head) && /^\d+-\d+$/.test(uid.slice(head.length));
+}
+
+/** 장식에 가려지면 읽거나 스캔할 수 없는 자동 배치 요소. 사진은 장식이 걸쳐도 되니 뺀다. */
+function mustStayOnTop(uid: string): boolean {
+  return uid === 'layout-qr' || uid === 'layout-map' || uid.startsWith('calendar-') || uid.startsWith('deceased-');
+}
 
 /** New elements have to land above everything the auto-layout already placed (e.g. the 자막 caption at z 20). */
 function maxZIndex(pages: Pages): number {
@@ -273,14 +289,13 @@ export default function Editor({
   }
 
   /**
-   * 미리 만들어 둔 아이콘 세트를 앞면에 얹는다. 지금 있는 것은 하나도 건드리지 않고
-   * 맨 위에 더하기만 하므로, 고객이 꾸며 둔 것이 초기화되지 않는다.
+   * 미리 만들어 둔 아이콘 세트를 **지금 보고 있는 면**에 얹는다. 지금 있는 것은 지우지 않고
+   * 더하기만 하므로, 고객이 꾸며 둔 것이 초기화되지 않는다.
    */
   function handleApplyTemplate(templateId: string) {
     const template = FRONT_TEMPLATES.find((t) => t.id === templateId);
-    if (!template) return;
-    const current = pagesRef.current.front;
-    if (!current) return;
+    const current = pagesRef.current[activeSide];
+    if (!template || !current) return;
     const added = templateIcons(
       template,
       spec.displayWidth,
@@ -289,28 +304,29 @@ export default function Editor({
       zCounter.current + 1,
     );
     if (!added.length) return;
-    // 이름·생년월일·자막 같은 글자는 전부 얹은 아이콘 위로 올린다 — 장식이 글을 가리면 안 된다.
-    // 글자끼리의 앞뒤 순서는 그대로 둔다.
-    const textBase = zCounter.current + added.length + 1;
-    const textZ = new Map(
-      [...current.texts].sort((a, b) => a.zIndex - b.zIndex).map((t, i) => [t.id, textBase + i] as const),
-    );
-    zCounter.current = textBase + current.texts.length;
-    commit((prev) => {
-      const front = prev.front;
-      if (!front) return prev;
-      return {
-        ...prev,
-        front: {
-          ...front,
-          icons: [...front.icons, ...added],
-          texts: front.texts.map((t) => ({ ...t, zIndex: textZ.get(t.id) ?? t.zIndex })),
-        },
-      };
-    });
-    // 얹은 자리가 앞면이니 보고 있는 면도 앞면으로 옮겨 준다
+    // 글자와 QR·약도·달력·국화꽃은 얹은 아이콘 위로 올린다 — 장식이 가리면 읽거나 스캔할 수 없다.
+    // 올리는 것들끼리의 앞뒤 순서는 그대로 둔다.
+    const lifted = [
+      ...current.texts.map((t) => ({ key: `text:${t.id}`, z: t.zIndex })),
+      ...current.icons.filter((i) => mustStayOnTop(i.uid)).map((i) => ({ key: `icon:${i.uid}`, z: i.zIndex })),
+    ].sort((a, b) => a.z - b.z);
+    const base = zCounter.current + added.length + 1;
+    const liftedZ = new Map(lifted.map((item, i) => [item.key, base + i] as const));
+    zCounter.current = base + lifted.length;
+    updateActivePage((page) => ({
+      ...page,
+      icons: [...page.icons.map((i) => ({ ...i, zIndex: liftedZ.get(`icon:${i.uid}`) ?? i.zIndex })), ...added],
+      texts: page.texts.map((t) => ({ ...t, zIndex: liftedZ.get(`text:${t.id}`) ?? t.zIndex })),
+    }));
     setSelection([]);
-    setActiveSide('front');
+  }
+
+  /** 지금 보고 있는 면에서 그 템플릿이 얹은 아이콘을 한 번에 걷어 낸다 — 하나씩 지우지 않아도 되게. */
+  function handleRemoveTemplate(templateId: string) {
+    const current = pagesRef.current[activeSide];
+    if (!current?.icons.some((i) => isFromTemplate(i.uid, templateId))) return;
+    updateActivePage((page) => ({ ...page, icons: page.icons.filter((i) => !isFromTemplate(i.uid, templateId)) }));
+    setSelection([]);
   }
 
   function handleDelete() {
@@ -378,6 +394,11 @@ export default function Editor({
     updateActivePage((p) => ({ ...p, customColor: color }));
   }
 
+  // 지금 보고 있는 면에 요소가 남아 있는 템플릿 — 적용 취소 버튼을 켤지 정한다
+  const appliedTemplateIds = new Set(
+    FRONT_TEMPLATES.filter((t) => activePage.icons.some((i) => isFromTemplate(i.uid, t.id))).map((t) => t.id),
+  );
+
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -416,7 +437,11 @@ export default function Editor({
         {!readOnly && (
           <aside className="side-col">
             <IconLibrary onAddIcon={handleAddIcon} />
-            <TemplatePanel onApply={handleApplyTemplate} />
+            <TemplatePanel
+              appliedIds={appliedTemplateIds}
+              onApply={handleApplyTemplate}
+              onRemove={handleRemoveTemplate}
+            />
             <LayerPanel
               icons={activePage.icons}
               texts={activePage.texts}

@@ -5,8 +5,12 @@ import { tintImage } from '../lib/tint';
 import Panel from './Panel';
 
 interface Props {
-  /** 앞면에 템플릿 아이콘을 얹는다. 지금 꾸며 둔 것은 그대로 두고 위에 더한다. */
+  /** 지금 보고 있는 면에 요소가 남아 있는 템플릿 — 적용 취소 버튼을 켤지 정한다. */
+  appliedIds: ReadonlySet<string>;
+  /** 지금 보고 있는 면에 템플릿 아이콘을 얹는다. 꾸며 둔 것은 그대로 두고 위에 더한다. */
   onApply: (templateId: string) => void;
+  /** 지금 보고 있는 면에서 그 템플릿이 얹은 아이콘을 모두 걷어 낸다. */
+  onRemove: (templateId: string) => void;
 }
 
 /**
@@ -37,12 +41,12 @@ function PreviewIcon({ src, color, style }: { src: string; color?: string; style
   return <img src={tinted ?? src} alt="" draggable={false} style={{ ...style, visibility: waiting ? 'hidden' : undefined }} />;
 }
 
-export default function TemplatePanel({ onApply }: Props) {
+export default function TemplatePanel({ appliedIds, onApply, onRemove }: Props) {
   return (
     <Panel title="템플릿">
       <p className="hint">
-        미리 만들어 둔 아이콘 세트를 앞면에 얹어요. 지금 꾸민 건 그대로 두고 위에 더해지고,
-        얹은 뒤에도 하나씩 옮기거나 지울 수 있어요.
+        지금 보고 있는 면에 아이콘 세트를 얹어요. 꾸민 건 그대로 두고 위에 더해지고,
+        적용 취소를 누르면 그 세트만 한 번에 빠져요.
       </p>
       <div className="template-list">
         {FRONT_TEMPLATES.map((t) => (
@@ -69,9 +73,14 @@ export default function TemplatePanel({ onApply }: Props) {
                 <span>{t.note}</span>
               </div>
             </div>
-            <button className="secondary full-width" onClick={() => onApply(t.id)}>
-              앞면에 얹기
-            </button>
+            <div className="template-actions">
+              <button className="secondary" onClick={() => onApply(t.id)}>
+                적용
+              </button>
+              <button className="secondary" disabled={!appliedIds.has(t.id)} onClick={() => onRemove(t.id)}>
+                적용 취소
+              </button>
+            </div>
           </div>
         ))}
       </div>

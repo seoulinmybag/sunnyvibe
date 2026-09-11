@@ -374,6 +374,21 @@
   opacity: 0.8;
 }
 
+.template-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.template-actions button {
+  width: 100%;
+}
+
+.template-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .template-swatch {
   width: 72px;
   height: 56px;
