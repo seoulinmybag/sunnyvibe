@@ -63,4 +63,54 @@ export const FRONT_TEMPLATES: FrontTemplate[] = [
       { iconId: 'flower-04', x: 0.865, y: 0.808, width: 0.11, color: '#a8dd8a' },
     ],
   },
+  {
+    id: 'hobby-rich',
+    label: '취미부자',
+    // 좌표는 확정 PDF에서 꺼낸 앞면 그림(1889×1299 = 16:11)에서 장식마다 잉크 경계 상자를 재서 옮겼다.
+    note: '취미 아이콘 9개를 테두리에 흩뿌려요.',
+    spots: [
+      { iconId: 'hobby-15', x: 0.042, y: 0.059, width: 0.116 }, // 자전거
+      { iconId: 'hobby-09', x: 0.279, y: 0.045, width: 0.138 }, // 산
+      { iconId: 'hobby-19', x: 0.899, y: 0.1, width: 0.062 }, // 캐리어
+      { iconId: 'deco-26', x: 0.853, y: 0.058, width: 0.137 }, // 캐리어를 감싸는 동그라미
+      { iconId: 'hobby-12', x: 0.704, y: 0.125, width: 0.121 }, // 실
+      { iconId: 'hobby-11', x: 0.18, y: 0.2, width: 0.111 }, // 스케이트 보드
+      { iconId: 'hobby-16', x: 0.062, y: 0.286, width: 0.096 }, // 축구
+      { iconId: 'deco-26', x: 0.034, y: 0.258, width: 0.137 }, // 축구공을 감싸는 동그라미
+      { iconId: 'hobby-02', x: 0.83, y: 0.277, width: 0.124 }, // 꽃
+      { iconId: 'hobby-08', x: 0.022, y: 0.595, width: 0.098 }, // 불멍
+      { iconId: 'hobby-18', x: 0.846, y: 0.667, width: 0.109 }, // 카메라
+    ],
+  },
+  {
+    id: 'prince-princess',
+    label: '왕자님과 공주님',
+    note: '왕관과 색연필 아이들로 위쪽을 채워요.',
+    spots: [
+      { iconId: 'crayon-04', x: 0.031, y: 0.043, width: 0.115 }, // 로켓
+      { iconId: 'crayon-08', x: 0.877, y: 0.056, width: 0.098 }, // 나비
+      { iconId: 'flower-15', x: 0.329, y: 0.146, width: 0.125 }, // 왕관 (원래 하늘색)
+      { iconId: 'flower-19', x: 0.524, y: 0.263, width: 0.109 }, // 왕관2 (원래 분홍)
+      { iconId: 'doodle-02', x: 0.073, y: 0.264, width: 0.105 }, // 달리는아이
+      { iconId: 'doodle-23', x: 0.167, y: 0.317, width: 0.101 }, // 미끄럼틀
+      { iconId: 'doodle-01', x: 0.723, y: 0.262, width: 0.085 }, // 춤추는아이
+      { iconId: 'doodle-20', x: 0.808, y: 0.253, width: 0.071 }, // 곰인형
+      { iconId: 'doodle-12', x: 0.892, y: 0.307, width: 0.062 }, // 막대사탕
+    ],
+  },
+  {
+    id: 'wedding-day',
+    label: '웨딩데이',
+    note: '예복과 반지, 파스텔 리본으로 차분하게 감싸요.',
+    spots: [
+      { iconId: 'wedding-06', x: 0.031, y: 0.099, width: 0.091 }, // 웨딩링
+      { iconId: 'deco-10', x: 0.194, y: 0.1, width: 0.066, color: '#d7d7d7' }, // 리본매듭
+      { iconId: 'wedding-09', x: 0.431, y: 0.038, width: 0.138 }, // 웨딩손
+      { iconId: 'wedding-03', x: 0.823, y: 0.075, width: 0.117 }, // 웨딩규듀
+      { iconId: 'deco-02', x: 0.747, y: 0.188, width: 0.044, color: '#f9d4e1' }, // 네갈래반짝임
+      { iconId: 'wedding-16', x: 0.115, y: 0.26, width: 0.094 }, // 웨딩턱시도
+      { iconId: 'wedding-05', x: 0.777, y: 0.243, width: 0.108 }, // 웨딩드레스
+      { iconId: 'deco-10', x: 0.902, y: 0.353, width: 0.078, color: '#caf0fe' }, // 리본매듭
+    ],
+  },
 ];
