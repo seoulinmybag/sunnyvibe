@@ -318,11 +318,23 @@ const SNAP_DISTANCE = 8;
 
 /**
  * How far above the selection Konva hangs the rotate handle. It has to stay well under the gap
- * `.selection-toolbar` keeps from the selection (32px), or the floating buttons cover the handle
+ * `.selection-toolbar` keeps from the selection (40px), or the floating buttons cover the handle
  * and swallow the click — the handle never sticks out further than this offset plus half an
  * anchor, at any rotation, so the two can't meet.
  */
 const ROTATE_ANCHOR_OFFSET = 20;
+/** 회전 손잡이 지름. 오프셋 + 반지름이 `.selection-toolbar` 간격보다 작아야 한다. */
+const ROTATE_ANCHOR_SIZE = 22;
+
+/** 네모 손잡이 대신 "돌린다"가 바로 읽히는 양쪽 화살표. 흰 동그라미까지 그림에 넣어 둔다. */
+const ROTATE_ICON_SVG =
+  `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">` +
+  `<circle cx="12" cy="12" r="11.2" fill="#ffffff" stroke="#c3c3c8" stroke-width="1.2"/>` +
+  `<path d="M6.2 14.6 A 7 7 0 1 1 17.8 14.6" fill="none" stroke="#2b2b2b" stroke-width="2" stroke-linecap="round"/>` +
+  `<path d="M4.0 12.6 L8.4 12.6 L6.2 16.8 Z" fill="#2b2b2b"/>` +
+  `<path d="M15.6 12.6 L20.0 12.6 L17.8 16.8 Z" fill="#2b2b2b"/>` +
+  `</svg>`;
+const ROTATE_ICON = `data:image/svg+xml,${encodeURIComponent(ROTATE_ICON_SVG)}`;
 
 interface SelectionRect {
   x: number;
@@ -375,6 +387,7 @@ export default function CanvasEditor({
   const viewportRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [guides, setGuides] = useState({ vertical: false, horizontal: false });
+  const [rotateIcon] = useImage(ROTATE_ICON);
   /** 크기·회전을 끄는 동안은 떠 있는 버튼을 숨긴다 — 손잡이 근처에서 알짱거려 잡기 어렵다. */
   const [transforming, setTransforming] = useState(false);
 
@@ -492,6 +505,12 @@ export default function CanvasEditor({
     );
     tr.getLayer()?.batchDraw();
   }, [selection, icons, texts, stageRef, croppingUid, editingTextId, interactive]);
+
+  // 회전 아이콘은 나중에 로드되므로, 도착하면 손잡이를 다시 그려 그림을 입힌다
+  useEffect(() => {
+    trRef.current?.forceUpdate();
+    trRef.current?.getLayer()?.batchDraw();
+  }, [rotateIcon]);
 
   useEffect(() => {
     if (editingTextId && textareaRef.current) {
@@ -648,9 +667,28 @@ export default function CanvasEditor({
               ref={trRef}
               rotateEnabled
               rotateAnchorOffset={ROTATE_ANCHOR_OFFSET}
+              rotateAnchorCursor="grab"
               flipEnabled={false}
               onTransformStart={() => setTransforming(true)}
               onTransformEnd={() => setTransforming(false)}
+              // 크기 손잡이는 네모 그대로 두고, 회전 손잡이만 동그란 회전 아이콘으로 바꾼다
+              anchorStyleFunc={(anchor) => {
+                if (!anchor.hasName('rotater')) return;
+                anchor.width(ROTATE_ANCHOR_SIZE);
+                anchor.height(ROTATE_ANCHOR_SIZE);
+                anchor.offsetX(ROTATE_ANCHOR_SIZE / 2);
+                anchor.offsetY(ROTATE_ANCHOR_SIZE / 2);
+                anchor.cornerRadius(ROTATE_ANCHOR_SIZE / 2);
+                anchor.strokeEnabled(false);
+                if (!rotateIcon) return;
+                anchor.fillPriority('pattern');
+                anchor.fillPatternImage(rotateIcon);
+                anchor.fillPatternRepeat('no-repeat');
+                anchor.fillPatternScale({
+                  x: ROTATE_ANCHOR_SIZE / rotateIcon.width,
+                  y: ROTATE_ANCHOR_SIZE / rotateIcon.height,
+                });
+              }}
               boundBoxFunc={(oldBox, newBox) => (newBox.width < 12 || newBox.height < 12 ? oldBox : newBox)}
             />
           )}

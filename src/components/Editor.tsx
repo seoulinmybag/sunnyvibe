@@ -177,6 +177,16 @@ export default function Editor({
   useEffect(() => {
     if (readOnly) return;
     function onKeyDown(e: KeyboardEvent) {
+      // Delete·Backspace로 고른 개체를 지운다. 문구 칸에 커서가 있을 때는 글자를 지워야 하니 비켜 준다.
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        const el = document.activeElement;
+        const typing =
+          el instanceof HTMLElement && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+        if (typing || selection.length === 0) return;
+        e.preventDefault();
+        handleDelete();
+        return;
+      }
       if (!(e.metaKey || e.ctrlKey)) return;
       const key = e.key.toLowerCase();
       if (key === 'z' && !e.shiftKey) {

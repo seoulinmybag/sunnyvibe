@@ -535,14 +535,14 @@
   border-radius: 4px;
 }
 
-/* the 32px gap has to stay bigger than ROTATE_ANCHOR_OFFSET + half an anchor (CanvasEditor),
-   otherwise these buttons sit on the rotate handle and eat the click meant for it */
+/* the 40px gap has to stay bigger than ROTATE_ANCHOR_OFFSET + half the rotate anchor
+   (CanvasEditor), otherwise these buttons sit on the handle and eat the click meant for it */
 .selection-toolbar {
   position: absolute;
   display: flex;
   align-items: center;
   gap: 4px;
-  transform: translate(-100%, calc(-100% - 32px));
+  transform: translate(-100%, calc(-100% - 40px));
   z-index: 10;
 }
 
