@@ -23,6 +23,11 @@ const SAVE_STATE_LABEL: Record<SaveState, string> = {
 
 /** Autosave waits this long after the last edit before writing. */
 const AUTOSAVE_DELAY = 1200;
+/**
+ * 안전망. 디바운스는 편집이 잠깐 멈춰야 저장하고, 저장이 실패하면 다시 시도하지 않는다.
+ * 3분마다 아직 안 올라간 변경이 있으면 한 번 더 올려 둔다.
+ */
+const SAFETY_SAVE_INTERVAL = 3 * 60 * 1000;
 
 export default function CustomerOrder() {
   const { id } = useParams<{ id: string }>();
@@ -40,6 +45,8 @@ export default function CustomerOrder() {
   /** Latest design, so 임시저장 and the leave-the-page flush can write without waiting for a render. */
   const pagesRef = useRef<Pages | null>(null);
   const dirtyRef = useRef(false);
+  /** 저장이 날아가는 중인지 — 안전망이 같은 저장을 한 번 더 보내지 않게 한다. */
+  const savingRef = useRef(false);
 
   useEffect(() => {
     if (!id) return;
@@ -60,6 +67,7 @@ export default function CustomerOrder() {
     const pages = pagesRef.current;
     if (!current || current.status === 'confirmed' || !pages) return;
     if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current);
+    savingRef.current = true;
     setSaveState('saving');
     try {
       const res = await fetch(`/api/orders/autosave?id=${encodeURIComponent(current.id)}`, {
@@ -79,6 +87,8 @@ export default function CustomerOrder() {
       }
     } catch {
       setSaveState('error');
+    } finally {
+      savingRef.current = false;
     }
   }, []);
 
@@ -93,6 +103,14 @@ export default function CustomerOrder() {
     },
     [savePages],
   );
+
+  // 디바운스가 놓치는 경우(편집이 계속 이어지거나 저장이 실패한 경우)를 위한 주기적 저장
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (dirtyRef.current && !savingRef.current) void savePages();
+    }, SAFETY_SAVE_INTERVAL);
+    return () => window.clearInterval(timer);
+  }, [savePages]);
 
   // Leaving with an edit still inside the debounce window would drop it, so flush when the tab
   // goes away, and fall back to the browser's own prompt if the write can't finish in time.
